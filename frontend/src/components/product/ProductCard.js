@@ -43,12 +43,12 @@ const ProductCard = ({ product }) => {
     >
       <Link to={`/products/${product.slug || product._id}`}>
         {/* Image */}
-        <div className="relative overflow-hidden rounded-t-xl bg-gray-100">
+        <div className="relative overflow-hidden rounded-t-xl bg-gray-100 h-40 sm:h-48">
           <img
             src={image}
             alt={product.name}
             loading="lazy"
-            className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-400"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
           />
 
           {/* Discount Badge */}
