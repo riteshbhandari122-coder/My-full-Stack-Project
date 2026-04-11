@@ -17,16 +17,20 @@ const migrate = async () => {
 
   for (let product of products) {
     try {
-      if (product.images?.[0]?.url) {
-        const result = await cloudinary.uploader.upload(product.images[0].url, {
-          folder: 'shopmart',
-          timeout: 60000
-        });
-        product.images[0].url = result.secure_url;
-        product.images[0].public_id = result.public_id;
-        await product.save();
-        console.log(`✅ ${product.name}`);
+      let changed = false;
+      for (let i = 0; i < product.images.length; i++) {
+        if (product.images[i]?.url?.includes('pinimg') || product.images[i]?.url?.includes('pinterest')) {
+          const result = await cloudinary.uploader.upload(product.images[i].url, {
+            folder: 'shopmart',
+            timeout: 60000
+          });
+          product.images[i].url = result.secure_url;
+          product.images[i].public_id = result.public_id;
+          changed = true;
+          console.log(`✅ Image ${i+1} fixed: ${product.name}`);
+        }
       }
+      if (changed) await product.save();
     } catch (err) {
       console.log(`❌ Failed: ${product.name} - ${err.message}`);
     }
