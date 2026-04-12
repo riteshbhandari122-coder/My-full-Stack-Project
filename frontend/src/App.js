@@ -21,6 +21,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import GoogleSuccess from './pages/auth/GoogleSuccess';
 
 // Pages - User
 import ProfilePage from './pages/user/ProfilePage';
@@ -71,6 +72,7 @@ function App() {
           <Route path="register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="auth/google/success" element={<GoogleSuccess />} />
 
           {/* Protected User Routes */}
           <Route path="checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />

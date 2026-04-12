@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/authMiddleware');
 const {
   register,
@@ -28,8 +29,17 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL}/login` }),
-  (req, res) => {
-    res.redirect(process.env.CLIENT_URL || 'http://localhost:3000');
+  async (req, res) => {
+    try {
+      const token = jwt.sign(
+        { id: req.user._id },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRE }
+      );
+      res.redirect(`${process.env.CLIENT_URL}/auth/google/success?token=${token}`);
+    } catch (err) {
+      res.redirect(`${process.env.CLIENT_URL}/login`);
+    }
   }
 );
 

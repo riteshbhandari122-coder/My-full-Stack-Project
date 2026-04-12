@@ -31,6 +31,20 @@ export const useAuthStore = create(
         return data;
       },
 
+      loginWithToken: async (token) => {
+        set({ token });
+        try {
+          const { data } = await api.get('/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          set({ user: data.user, token });
+          toast.success(`Welcome, ${data.user.name}! 👋`);
+        } catch {
+          set({ user: null, token: null });
+          toast.error('Google login failed');
+        }
+      },
+
       register: async (userData) => {
         const { data } = await api.post('/auth/register', userData);
         set({ user: data.user, token: data.token });
