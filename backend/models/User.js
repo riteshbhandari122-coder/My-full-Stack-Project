@@ -17,7 +17,9 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, minlength: 6, select: false },
+    password: { type: String, minlength: 6, select: false }, // ✅ removed required:true
+    googleId: { type: String, default: null },               // ✅ added googleId
+    isGoogleUser: { type: Boolean, default: false },         // ✅ added isGoogleUser
     phone: { type: String, default: '' },
     avatar: { type: String, default: '' },
     role: { type: String, enum: ['user', 'admin', 'seller'], default: 'user' },
@@ -55,12 +57,14 @@ const userSchema = new mongoose.Schema(
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
+  if (!this.password) return next(); // ✅ skip if no password (Google user)
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
 // Match password
 userSchema.methods.matchPassword = async function (enteredPassword) {
+  if (!this.password) return false; // ✅ Google users have no password
   return await bcrypt.compare(enteredPassword, this.password);
 };
 

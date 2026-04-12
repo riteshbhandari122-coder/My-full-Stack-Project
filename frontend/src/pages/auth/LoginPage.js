@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
@@ -25,6 +26,10 @@ const LoginPage = () => {
       toast.error(err.message || 'Login failed');
     }
     setLoading(false);
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/google`;
   };
 
   return (
@@ -96,6 +101,22 @@ const LoginPage = () => {
             ) : 'Sign In'}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-4">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-sm text-gray-400">or</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+
+        {/* Google Login Button */}
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 text-gray-700 font-medium hover:bg-gray-50 transition"
+        >
+          <FcGoogle size={22} />
+          Continue with Google
+        </button>
 
         <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
           <strong>Demo:</strong> admin@shopmart.com / admin123456 (Admin) | user@shopmart.com / user123456 (User)

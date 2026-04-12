@@ -9,8 +9,12 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const path = require('path');
+const passport = require('passport');
 
 dotenv.config();
+
+// Passport Config
+require('./config/passport');
 
 const app = express();
 const server = http.createServer(app);
@@ -30,7 +34,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({
   origin: ['http://localhost:3000', 'https://my-full-stack-project-one.vercel.app'],
   credentials: true
-}))
+}));
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -44,6 +48,9 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// Passport Middleware
+app.use(passport.initialize());
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
