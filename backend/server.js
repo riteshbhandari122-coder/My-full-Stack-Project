@@ -10,6 +10,7 @@ const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const path = require('path');
 const passport = require('passport');
+const session = require('express-session');
 
 dotenv.config();
 
@@ -49,8 +50,20 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// Session Middleware ✅
+app.use(session({
+  secret: process.env.JWT_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  }
+}));
+
 // Passport Middleware
 app.use(passport.initialize());
+app.use(passport.session());
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
