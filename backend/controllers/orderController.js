@@ -49,7 +49,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
   // Calculate prices
   const shippingPrice = itemsPrice > 2000 ? 0 : 100;
-  const taxPrice = Math.round(itemsPrice * 0.13); // 13% VAT
+  const taxPrice = Math.round(itemsPrice * 0.13);
   let discountAmount = 0;
 
   if (couponCode || cart.couponCode) {
@@ -91,55 +91,57 @@ const createOrder = asyncHandler(async (req, res) => {
     ],
   });
 
-  // Update product stock
-  for (const item of orderItems) {
-    await Product.findByIdAndUpdate(item.product, {
-      $inc: { stock: -item.quantity, sold: item.quantity },
-    });
-  }
+  // ✅ Send response IMMEDIATELY - don't wait for email/notifications
+  res.status(201).json({ success: true, order });
 
-  // Add to user order history
-  await User.findByIdAndUpdate(req.user._id, {
-    $push: { orderHistory: order._id },
-  });
-
-  // Clear cart
-  cart.items = [];
-  cart.couponCode = '';
-  cart.discountAmount = 0;
-  await cart.save();
-
-  // Send notification
-  await Notification.create({
-    user: req.user._id,
-    title: 'Order Placed!',
-    message: `Your order #${order.orderNumber} has been placed successfully`,
-    type: 'order',
-    link: `/orders/${order._id}`,
-  });
-
-  // Emit socket notification
-  const io = req.app.get('io');
-  if (io) {
-    io.to(String(req.user._id)).emit('orderUpdate', {
-      orderId: order._id,
-      status: 'placed',
-      message: 'Order placed successfully',
-    });
-  }
-
-  // Send email
+  // ✅ Do everything else AFTER response (non-blocking)
   try {
+    // Update product stock
+    for (const item of orderItems) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stock: -item.quantity, sold: item.quantity },
+      });
+    }
+
+    // Add to user order history
+    await User.findByIdAndUpdate(req.user._id, {
+      $push: { orderHistory: order._id },
+    });
+
+    // Clear cart
+    cart.items = [];
+    cart.couponCode = '';
+    cart.discountAmount = 0;
+    await cart.save();
+
+    // Send notification
+    await Notification.create({
+      user: req.user._id,
+      title: 'Order Placed!',
+      message: `Your order #${order.orderNumber} has been placed successfully`,
+      type: 'order',
+      link: `/orders/${order._id}`,
+    });
+
+    // Emit socket notification
+    const io = req.app.get('io');
+    if (io) {
+      io.to(String(req.user._id)).emit('orderUpdate', {
+        orderId: order._id,
+        status: 'placed',
+        message: 'Order placed successfully',
+      });
+    }
+
+    // Send email
     await sendEmail({
       to: req.user.email,
       subject: `Order Confirmed - #${order.orderNumber}`,
       html: emailTemplates.orderConfirmation(order),
     });
   } catch (err) {
-    console.log('Order email failed:', err.message);
+    console.log('Post-order tasks failed:', err.message);
   }
-
-  res.status(201).json({ success: true, order });
 });
 
 // @desc    Get user orders
@@ -205,7 +207,6 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
 
   const updatedOrder = await order.save();
 
-  // Notify user
   const io = req.app.get('io');
   if (io) {
     io.to(String(order.user)).emit('orderUpdate', {
@@ -284,32 +285,36 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 
   await order.save();
 
-  // Notify user via socket
-  const io = req.app.get('io');
-  if (io) {
-    io.to(String(order.user)).emit('orderUpdate', {
-      orderId: order._id,
-      status,
-      message: message || `Order status: ${status}`,
-    });
-    io.to(`order_${order._id}`).emit('trackingUpdate', {
-      status,
-      message,
-      timestamp: new Date(),
-      location,
-    });
-  }
-
-  // Create notification
-  await Notification.create({
-    user: order.user,
-    title: 'Order Update',
-    message: message || `Your order #${order.orderNumber} is now ${status.replace('_', ' ')}`,
-    type: 'delivery',
-    link: `/orders/${order._id}`,
-  });
-
+  // ✅ Send response first
   res.json({ success: true, order });
+
+  // ✅ Then do notifications non-blocking
+  try {
+    const io = req.app.get('io');
+    if (io) {
+      io.to(String(order.user)).emit('orderUpdate', {
+        orderId: order._id,
+        status,
+        message: message || `Order status: ${status}`,
+      });
+      io.to(`order_${order._id}`).emit('trackingUpdate', {
+        status,
+        message,
+        timestamp: new Date(),
+        location,
+      });
+    }
+
+    await Notification.create({
+      user: order.user,
+      title: 'Order Update',
+      message: message || `Your order #${order.orderNumber} is now ${status.replace('_', ' ')}`,
+      type: 'delivery',
+      link: `/orders/${order._id}`,
+    });
+  } catch (err) {
+    console.log('Post-status update failed:', err.message);
+  }
 });
 
 // @desc    Get all orders (Admin)
