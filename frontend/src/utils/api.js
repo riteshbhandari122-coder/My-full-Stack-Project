@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Pointing directly to your local backend server port
- baseURL: process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api` : 'http://localhost:5000/api',
+  baseURL: process.env.REACT_APP_API_URL
+    ? `${process.env.REACT_APP_API_URL}/api`
+    : 'http://localhost:5000/api',
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -17,7 +18,7 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (err) {
-      console.error("Auth token error:", err);
+      console.error('Auth token error:', err);
     }
     return config;
   },
@@ -28,18 +29,20 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error.response?.data?.message || error.message || 'Something went wrong';
+    const message =
+      error.response?.data?.message || error.message || 'Something went wrong';
 
     if (error.response?.status === 401) {
-      // Clear auth and redirect to login if unauthorized
       try {
-        const authData = JSON.parse(localStorage.getItem('shopmart-auth') || '{}');
+        const authData = JSON.parse(
+          localStorage.getItem('shopmart-auth') || '{}'
+        );
         if (authData?.state?.token) {
           localStorage.removeItem('shopmart-auth');
           window.location.href = '/login';
         }
       } catch (err) {
-        console.error("Logout error:", err);
+        console.error('Logout error:', err);
       }
     }
 

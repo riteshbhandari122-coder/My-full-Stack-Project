@@ -21,7 +21,10 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000',
+      'https://my-full-stack-project-one.vercel.app'
+    ],
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -32,9 +35,23 @@ app.set('io', io);
 
 // Security Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+// ✅ Fixed CORS for mobile
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://my-full-stack-project-one.vercel.app'],
-  credentials: true
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://my-full-stack-project-one.vercel.app'
+    ];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Rate Limiting
@@ -50,14 +67,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Session Middleware ✅
+// ✅ Session Middleware
 app.use(session({
   secret: process.env.JWT_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  cookie: {
+    secure: true,
+    sameSite: 'none', // ✅ fixes mobile cross-domain
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
