@@ -32,6 +32,7 @@ const Navbar = () => {
 
   const searchRef = useRef(null);
   const userMenuRef = useRef(null);
+  const notificationRef = useRef(null); // ✅ added ref
 
   useEffect(() => {
     if (user) {
@@ -52,6 +53,7 @@ const Navbar = () => {
     const handleClickOutside = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
       if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false);
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) setShowNotifications(false); // ✅
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -106,7 +108,7 @@ const Navbar = () => {
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-shadow duration-300 ${isScrolled ? 'shadow-navbar' : ''}`}>
 
-      {/* ── Top Promo Bar ── */}
+      {/* Top Promo Bar */}
       <div className="navbar-top-bar py-1.5 px-4 text-center hidden md:block">
         <p className="text-xs text-white/70 tracking-wide">
           🎉 Free shipping on orders over{' '}
@@ -120,11 +122,11 @@ const Navbar = () => {
         </p>
       </div>
 
-      {/* ── Main Navbar ── */}
+      {/* Main Navbar */}
       <div className="navbar-main px-4 py-2">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
 
-          {/* ✅ Circular Logo */}
+          {/* Logo */}
           <Link to="/" className="flex-shrink-0 flex items-center gap-2.5 group" aria-label="ShopMart home">
             <div className="logo-circle">
               <img
@@ -141,7 +143,7 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* ── Search Bar ── */}
+          {/* Search Bar */}
           <div className="flex-1 hidden md:block relative" ref={searchRef}>
             <form onSubmit={handleSearch} className="flex h-10">
               <input
@@ -197,7 +199,7 @@ const Navbar = () => {
             </AnimatePresence>
           </div>
 
-          {/* ── Right Actions ── */}
+          {/* Right Actions */}
           <div className="flex items-center gap-1">
 
             {/* Mobile search toggle */}
@@ -218,9 +220,9 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* Notifications */}
+            {/* ✅ FIXED Notifications - no longer goes off screen on mobile */}
             {user && (
-              <div className="relative">
+              <div className="relative" ref={notificationRef}>
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="nav-action-btn relative"
@@ -238,24 +240,44 @@ const Navbar = () => {
                     <motion.div
                       variants={dropdownVariants}
                       initial="hidden" animate="visible" exit="exit"
-                      className="absolute right-0 top-full mt-3 w-80 dropdown-panel bg-white z-50 py-2"
+                      className="
+                        fixed md:absolute
+                        left-2 right-2 md:left-auto md:right-0
+                        top-16 md:top-full
+                        mt-0 md:mt-3
+                        w-auto md:w-80
+                        dropdown-panel bg-white z-50 py-2
+                        max-h-[70vh] overflow-y-auto
+                      "
                     >
                       <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: 'Syne, sans-serif' }}>
+                        <span className="text-sm font-semibold text-gray-800">
                           Notifications
                         </span>
-                        {unreadCount > 0 && (
-                          <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
-                            {unreadCount} new
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {unreadCount > 0 && (
+                            <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                              {unreadCount} new
+                            </span>
+                          )}
+                          {/* ✅ Close button for mobile */}
+                          <button
+                            onClick={() => setShowNotifications(false)}
+                            className="md:hidden text-gray-400 hover:text-gray-600 text-lg font-bold"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
                       {notifications.length === 0 ? (
                         <p className="text-center text-sm text-gray-400 py-6">No notifications</p>
                       ) : (
                         notifications.map((n) => (
-                          <div key={n._id} className={`px-4 py-3 border-b border-gray-50 last:border-0 ${!n.isRead ? 'bg-amber-50/40' : ''}`}>
-                            <p className="text-sm font-semibold text-gray-800 inline">{n.title}</p>
+                          <div
+                            key={n._id}
+                            className={`px-4 py-3 border-b border-gray-50 last:border-0 ${!n.isRead ? 'bg-amber-50/40' : ''}`}
+                          >
+                            <p className="text-sm font-semibold text-gray-800">{n.title}</p>
                             <p className="text-xs text-gray-500 mt-1">{n.message}</p>
                           </div>
                         ))
@@ -315,7 +337,7 @@ const Navbar = () => {
                     >
                       <div className="px-4 py-3 border-b border-gray-100 mb-1">
                         <p className="text-xs text-gray-400">Signed in as</p>
-                        <p className="text-sm font-semibold text-gray-800 truncate mt-0.5" style={{ fontFamily: 'Syne, sans-serif' }}>
+                        <p className="text-sm font-semibold text-gray-800 truncate mt-0.5">
                           {user.name}
                         </p>
                       </div>
@@ -396,7 +418,7 @@ const Navbar = () => {
         </AnimatePresence>
       </div>
 
-      {/* ── Categories Bar ── */}
+      {/* Categories Bar */}
       <div className="navbar-categories hidden md:block">
         <div className="max-w-7xl mx-auto px-4 flex items-center gap-0.5 overflow-x-auto scrollbar-hide py-1.5">
           <Link to="/products" className="cat-link flex items-center gap-1.5 font-semibold !text-white/80 hover:!text-white">
