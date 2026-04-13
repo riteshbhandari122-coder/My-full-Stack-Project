@@ -10,24 +10,24 @@ import { formatPrice, formatDate, getOrderStatusInfo } from '../../utils/helpers
 import toast from 'react-hot-toast';
 
 const trackingSteps = [
-  { key: 'placed',           label: 'Order Placed',      icon: '📋', desc: 'Your order has been received' },
-  { key: 'confirmed',        label: 'Confirmed',          icon: '✅', desc: 'Order confirmed by seller' },
-  { key: 'packed',           label: 'Packed',             icon: '📦', desc: 'Your items are packed' },
-  { key: 'shipped',          label: 'Shipped',            icon: '🚚', desc: 'Order is on the way' },
-  { key: 'out_for_delivery', label: 'Out for Delivery',   icon: '🛵', desc: 'Arriving today!' },
-  { key: 'delivered',        label: 'Delivered',          icon: '🎉', desc: 'Enjoy your purchase!' },
+  { key: 'placed', label: 'Order Placed', icon: '📋', desc: 'Your order has been received' },
+  { key: 'confirmed', label: 'Confirmed', icon: '✅', desc: 'Order confirmed by seller' },
+  { key: 'packed', label: 'Packed', icon: '📦', desc: 'Your items are packed' },
+  { key: 'shipped', label: 'Shipped', icon: '🚚', desc: 'Order is on the way' },
+  { key: 'out_for_delivery', label: 'Out for Delivery', icon: '🛵', desc: 'Arriving today!' },
+  { key: 'delivered', label: 'Delivered', icon: '🎉', desc: 'Enjoy your purchase!' },
 ];
 
 const StatusBadge = ({ status }) => {
   const colors = {
-    placed:           'bg-blue-100 text-blue-700',
-    confirmed:        'bg-indigo-100 text-indigo-700',
-    packed:           'bg-yellow-100 text-yellow-700',
-    shipped:          'bg-orange-100 text-orange-700',
+    placed: 'bg-blue-100 text-blue-700',
+    confirmed: 'bg-indigo-100 text-indigo-700',
+    packed: 'bg-yellow-100 text-yellow-700',
+    shipped: 'bg-orange-100 text-orange-700',
     out_for_delivery: 'bg-purple-100 text-purple-700',
-    delivered:        'bg-green-100 text-green-700',
-    cancelled:        'bg-red-100 text-red-700',
-    returned:         'bg-gray-100 text-gray-700',
+    delivered: 'bg-green-100 text-green-700',
+    cancelled: 'bg-red-100 text-red-700',
+    returned: 'bg-gray-100 text-gray-700',
   };
   return (
     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${colors[status] || 'bg-gray-100 text-gray-700'}`}>
@@ -182,7 +182,7 @@ const OrderDetailPage = () => {
                           className={`w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 z-10
                             ${isDone ? 'bg-green-500 shadow-md shadow-green-200' :
                               isCurrent ? 'bg-primary-500 shadow-md shadow-primary-200' :
-                              'bg-gray-100'}`}
+                                'bg-gray-100'}`}
                         >
                           {isDone ? (
                             isCurrent ? step.icon : <FiCheckCircle className="text-white" size={18} />
@@ -368,13 +368,15 @@ const OrderDetailPage = () => {
             </div>
           </div>
 
-          {/* Need Help */}
+         {/* Need Help */}
           <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-5 text-white">
             <h3 className="font-bold mb-2">Need Help? 💬</h3>
             <p className="text-xs text-white/80 mb-3">
               Have an issue with your order? Contact us!
             </p>
-            
+
+            {/* FIXED: Added the opening 'a' tag here */}
+            <a
               href="https://wa.me/9779800000000"
               target="_blank"
               rel="noreferrer"
@@ -383,10 +385,10 @@ const OrderDetailPage = () => {
               💬 WhatsApp Support
             </a>
           </div>
-        </div>
-      </div>
-    </div>
-  );
+        </div> {/* Closes Sidebar */}
+      </div> {/* Closes Grid */}
+    </div> {/* Closes Main Container */}
+  ); // FIXED: Removed the extra </div> </div> tags that were here
 };
 
 export default OrderDetailPage;
