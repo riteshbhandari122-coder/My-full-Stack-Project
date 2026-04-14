@@ -62,17 +62,22 @@ const ProductDetailPage = () => {
   };
 
   // ✅ When color changes, find the matching image index
-  const handleColorChange = (color) => {
-    setSelectedColor(color);
-    if (product?.images?.length > 0) {
-      const colorImageIndex = product.images.findIndex(
-        (img) => img.color?.toLowerCase() === color.toLowerCase()
+ const handleColorChange = (color) => {
+  setSelectedColor(color);
+  if (product?.images?.length > 0) {
+    // ✅ Try exact match first, then lowercase, then partial match
+    let colorImageIndex = product.images.findIndex(
+      (img) => img.color?.toLowerCase() === color.toLowerCase()
+    );
+    // ✅ If no color match found, try finding by alt text
+    if (colorImageIndex === -1) {
+      colorImageIndex = product.images.findIndex(
+        (img) => img.alt?.toLowerCase().includes(color.toLowerCase())
       );
-      // If a matching image found, switch to it. Otherwise stay on first image.
-      setSelectedImage(colorImageIndex >= 0 ? colorImageIndex : 0);
     }
-  };
-
+    setSelectedImage(colorImageIndex >= 0 ? colorImageIndex : 0);
+  }
+};
   const handleAddToCart = async () => {
     if (!user) { toast.error('Please login to add to cart'); return; }
     await addToCart(product._id, quantity, selectedColor, selectedSize);
@@ -212,45 +217,69 @@ const ProductDetailPage = () => {
           </div>
 
           {/* ✅ Colors - now switches image on click */}
-          {product.colors?.length > 0 && (
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-gray-700 mb-2">
-                Color: <span className="text-primary-600">{selectedColor}</span>
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {product.colors.map((c) => {
-                  // Check if this color has a matching image
-                  const hasImage = product.images?.some(
-                    (img) => img.color?.toLowerCase() === c.toLowerCase()
-                  );
-                  return (
-                    <button
-                      key={c}
-                      onClick={() => handleColorChange(c)}
-                      title={c}
-                      className={`relative w-10 h-10 rounded-full border-4 transition-all ${
-                        selectedColor === c
-                          ? 'border-primary-600 scale-110 shadow-md'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                      style={{ backgroundColor: c.toLowerCase() }}
-                    >
-                      {/* Small image preview badge if image exists */}
-                      {hasImage && selectedColor === c && (
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* ✅ Show current color image label */}
-              {images[selectedImage]?.color && (
-                <p className="text-xs text-gray-500 mt-2">
-                  Showing: <span className="font-medium">{images[selectedImage].color}</span> variant
-                </p>
-              )}
-            </div>
-          )}
+         {product.colors?.length > 0 && (
+  <div className="mb-4">
+    <p className="text-sm font-semibold text-gray-700 mb-2">
+      Color: <span className="text-primary-600">{selectedColor}</span>
+    </p>
+    <div className="flex gap-2 flex-wrap">
+      {product.colors.map((c) => {
+        const hasImage = product.images?.some(
+          (img) => img.color?.toLowerCase() === c.toLowerCase()
+        );
+        // ✅ Map common color names to hex
+        const colorMap = {
+          white: '#ffffff',
+          black: '#000000',
+          red: '#ef4444',
+          blue: '#3b82f6',
+          green: '#22c55e',
+          yellow: '#eab308',
+          pink: '#ec4899',
+          purple: '#a855f7',
+          orange: '#f97316',
+          gray: '#6b7280',
+          grey: '#6b7280',
+          brown: '#92400e',
+          navy: '#1e3a5f',
+          gold: '#f59e0b',
+          silver: '#9ca3af',
+        };
+        const bgColor = colorMap[c.toLowerCase()] || c.toLowerCase();
+        const isLight = ['white', 'yellow', 'silver', 'gold'].includes(c.toLowerCase());
+
+        return (
+          <button
+            key={c}
+            onClick={() => handleColorChange(c)}
+            title={c}
+            className={`relative w-10 h-10 rounded-full border-4 transition-all ${
+              selectedColor === c
+                ? 'border-primary-600 scale-110 shadow-md'
+                : isLight ? 'border-gray-400 hover:border-gray-500' : 'border-gray-300 hover:border-gray-400'
+            }`}
+            style={{ backgroundColor: bgColor }}
+          >
+            {selectedColor === c && (
+              <span
+                className={`absolute inset-0 flex items-center justify-center text-xs font-bold rounded-full ${
+                  isLight ? 'text-gray-800' : 'text-white'
+                }`}
+              >
+                ✓
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+    {images[selectedImage]?.color && (
+      <p className="text-xs text-gray-500 mt-2">
+        Showing: <span className="font-medium capitalize">{images[selectedImage].color}</span> variant
+      </p>
+    )}
+  </div>
+)}
 
           {/* Sizes */}
           {product.sizes?.length > 0 && (
