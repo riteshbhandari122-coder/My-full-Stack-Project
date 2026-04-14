@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiSearch, FiShoppingCart, FiHeart, FiBell, FiUser,
   FiMenu, FiLogOut, FiSettings, FiPackage, FiChevronDown,
-  FiGrid
+  FiGrid, FiSun, FiMoon
 } from 'react-icons/fi';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useWishlistStore } from '../../store/wishlistStore';
+import { useTheme } from '../../ThemeContext';
 import api from '../../utils/api';
 import { debounce } from '../../utils/helpers';
 
@@ -19,6 +20,7 @@ const Navbar = () => {
   const { user, logout } = useAuthStore();
   const { getCartCount, fetchCart } = useCartStore();
   const { wishlist, fetchWishlist } = useWishlistStore();
+  const { darkMode, toggleDarkMode } = useTheme();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -168,18 +170,15 @@ const Navbar = () => {
                 <motion.div
                   variants={dropdownVariants}
                   initial="hidden" animate="visible" exit="exit"
-                  className="absolute top-full left-0 right-0 dropdown-panel bg-white z-50 mt-2"
+                  className={`absolute top-full left-0 right-0 dropdown-panel z-50 mt-2 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'}`}
                 >
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                      Suggestions
-                    </span>
+                  <div className={`px-4 py-2 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Suggestions</span>
                   </div>
                   {suggestions.map((s) => (
                     <button
                       key={s._id}
                       onClick={() => {
-                        // ✅ Navigate to category or product
                         if (s.isCategory) {
                           navigate(`/products?search=${encodeURIComponent(s.name)}`);
                         } else {
@@ -188,9 +187,10 @@ const Navbar = () => {
                         setShowSuggestions(false);
                         setSearchQuery('');
                       }}
-                      className="flex items-center gap-3 w-full px-4 py-3 hover:bg-amber-50/60 text-left transition-colors duration-100 border-b border-gray-50 last:border-0"
+                      className={`flex items-center gap-3 w-full px-4 py-3 text-left transition-colors duration-100 border-b last:border-0 ${
+                        darkMode ? 'hover:bg-gray-800 border-gray-700' : 'hover:bg-amber-50/60 border-gray-50'
+                      }`}
                     >
-                      {/* ✅ Category icon or product image */}
                       {s.isCategory ? (
                         <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
                           <FiGrid size={18} className="text-primary-600" />
@@ -202,9 +202,8 @@ const Navbar = () => {
                       ) : (
                         <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0" />
                       )}
-
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm text-gray-800 truncate">
+                        <p className={`font-medium text-sm truncate ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
                           {s.isCategory ? `📂 ${s.name}` : s.name}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">
@@ -229,6 +228,16 @@ const Navbar = () => {
               aria-label="Search"
             >
               <FiSearch size={21} />
+            </button>
+
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="nav-action-btn relative"
+              aria-label="Toggle dark mode"
+            >
+              {darkMode ? <FiSun size={21} /> : <FiMoon size={21} />}
+              <span className="label hidden md:block">{darkMode ? 'Light' : 'Dark'}</span>
             </button>
 
             {/* Wishlist */}
@@ -260,18 +269,19 @@ const Navbar = () => {
                     <motion.div
                       variants={dropdownVariants}
                       initial="hidden" animate="visible" exit="exit"
-                      className="
+                      className={`
                         fixed md:absolute
                         left-2 right-2 md:left-auto md:right-0
                         top-16 md:top-full
                         mt-0 md:mt-3
                         w-auto md:w-80
-                        dropdown-panel bg-white z-50 py-2
+                        dropdown-panel z-50 py-2
                         max-h-[70vh] overflow-y-auto
-                      "
+                        ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'}
+                      `}
                     >
-                      <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-800">
+                      <div className={`px-4 py-2 border-b flex items-center justify-between ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                        <span className={`text-sm font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
                           Notifications
                         </span>
                         <div className="flex items-center gap-2">
@@ -283,9 +293,7 @@ const Navbar = () => {
                           <button
                             onClick={() => setShowNotifications(false)}
                             className="md:hidden text-gray-400 hover:text-gray-600 text-lg font-bold"
-                          >
-                            ✕
-                          </button>
+                          >✕</button>
                         </div>
                       </div>
                       {notifications.length === 0 ? (
@@ -294,10 +302,14 @@ const Navbar = () => {
                         notifications.map((n) => (
                           <div
                             key={n._id}
-                            className={`px-4 py-3 border-b border-gray-50 last:border-0 ${!n.isRead ? 'bg-amber-50/40' : ''}`}
+                            className={`px-4 py-3 border-b last:border-0 ${
+                              !n.isRead
+                                ? darkMode ? 'bg-amber-900/20' : 'bg-amber-50/40'
+                                : ''
+                            } ${darkMode ? 'border-gray-700' : 'border-gray-50'}`}
                           >
-                            <p className="text-sm font-semibold text-gray-800">{n.title}</p>
-                            <p className="text-xs text-gray-500 mt-1">{n.message}</p>
+                            <p className={`text-sm font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>{n.title}</p>
+                            <p className="text-xs text-gray-400 mt-1">{n.message}</p>
                           </div>
                         ))
                       )}
@@ -363,11 +375,11 @@ const Navbar = () => {
                     <motion.div
                       variants={dropdownVariants}
                       initial="hidden" animate="visible" exit="exit"
-                      className="absolute right-0 top-full mt-3 w-56 dropdown-panel bg-white z-50 py-1.5"
+                      className={`absolute right-0 top-full mt-3 w-56 dropdown-panel z-50 py-1.5 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'}`}
                     >
-                      <div className="px-4 py-3 border-b border-gray-100 mb-1">
+                      <div className={`px-4 py-3 border-b mb-1 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                         <p className="text-xs text-gray-400">Signed in as</p>
-                        <p className="text-sm font-semibold text-gray-800 truncate mt-0.5">
+                        <p className={`text-sm font-semibold truncate mt-0.5 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
                           {user.name}
                         </p>
                       </div>
@@ -380,7 +392,11 @@ const Navbar = () => {
                           key={to}
                           to={to}
                           onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-100 text-sm"
+                          className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-100 text-sm ${
+                            darkMode
+                              ? 'text-gray-300 hover:bg-gray-800 hover:text-gray-100'
+                              : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          }`}
                         >
                           <span className="text-gray-400">{icon}</span>
                           {label}
@@ -396,7 +412,7 @@ const Navbar = () => {
                           Admin Panel
                         </Link>
                       )}
-                      <div className="my-1 border-t border-gray-100" />
+                      <div className={`my-1 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`} />
                       <button
                         onClick={handleLogout}
                         className="flex items-center gap-3 px-4 py-2.5 text-red-500 hover:bg-red-50 hover:text-red-600 w-full transition-colors duration-100 text-sm"
@@ -448,9 +464,8 @@ const Navbar = () => {
                 </button>
               </form>
 
-              {/* ✅ Mobile suggestions */}
               {showSuggestions && suggestions.length > 0 && (
-                <div className="bg-white rounded-xl mt-2 shadow-lg border border-gray-100 overflow-hidden">
+                <div className={`rounded-xl mt-2 shadow-lg border overflow-hidden ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'}`}>
                   {suggestions.map((s) => (
                     <button
                       key={s._id}
@@ -464,7 +479,9 @@ const Navbar = () => {
                         setShowMobileSearch(false);
                         setSearchQuery('');
                       }}
-                      className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 text-left border-b border-gray-50 last:border-0"
+                      className={`flex items-center gap-3 w-full px-4 py-3 text-left border-b last:border-0 ${
+                        darkMode ? 'hover:bg-gray-800 border-gray-700' : 'hover:bg-gray-50 border-gray-50'
+                      }`}
                     >
                       {s.isCategory ? (
                         <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
@@ -478,7 +495,7 @@ const Navbar = () => {
                         <div className="w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0" />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm text-gray-800 truncate">
+                        <p className={`font-medium text-sm truncate ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
                           {s.isCategory ? `📂 ${s.name}` : s.name}
                         </p>
                         <p className="text-xs text-gray-400">

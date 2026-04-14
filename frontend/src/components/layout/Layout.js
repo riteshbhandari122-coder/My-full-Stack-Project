@@ -3,17 +3,18 @@ import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
+import LiveChat from '../common/LiveChat';
+import { useTheme } from '../../ThemeContext';
 
 const Layout = () => {
   const [navHeight, setNavHeight] = useState(0);
+  const { darkMode } = useTheme();
 
   useEffect(() => {
     const updateHeight = () => {
       const nav = document.querySelector('nav');
       if (nav) setNavHeight(nav.offsetHeight);
     };
-
-    // Small delay to let navbar fully render
     const timer = setTimeout(updateHeight, 50);
     window.addEventListener('resize', updateHeight);
     return () => {
@@ -23,13 +24,14 @@ const Layout = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${darkMode ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       <Navbar />
       <main className="flex-1" style={{ paddingTop: navHeight }}>
         <Outlet />
       </main>
       <Footer />
       <MobileNav />
+      <LiveChat />
     </div>
   );
 };
