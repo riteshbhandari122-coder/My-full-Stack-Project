@@ -18,6 +18,11 @@ dotenv.config();
 require('./config/passport');
 
 const app = express();
+
+// ✅ FIX 1: Tell Express to trust the Render proxy
+// This allows the rate limiter to see the USER'S IP instead of Render's IP.
+app.set('trust proxy', 1);
+
 const server = http.createServer(app);
 const io = socketio(server, {
   cors: {
@@ -54,10 +59,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Rate Limiting
+// ✅ FIX 2: Updated Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 500, // Increased from 200 to 500 to be safer for production
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   message: 'Too many requests from this IP, please try again later.',
 });
 app.use('/api/', limiter);
@@ -73,8 +80,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,
-    sameSite: 'none', // ✅ fixes mobile cross-domain
+    secure: true, // Keep true since you are on HTTPS (Render)
+    sameSite: 'none', 
     maxAge: 24 * 60 * 60 * 1000
   }
 }));
