@@ -73,7 +73,13 @@ const CartPage = () => {
             >
               <Link to={`/products/${item.product?._id}`}>
                 <img
-                  src={item.product?.images?.[0]?.url || 'https://picsum.photos/100/100'}
+                  src={
+  (item.color
+    ? item.product?.images?.find(img => img.color?.toLowerCase() === item.color?.toLowerCase())?.url
+    : null)
+  || item.product?.images?.[0]?.url
+  || 'https://picsum.photos/100/100'
+}
                   alt={item.product?.name}
                   className="w-20 h-20 object-cover rounded-lg bg-gray-100"
                 />
