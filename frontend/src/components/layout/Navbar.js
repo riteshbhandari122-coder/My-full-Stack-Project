@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiSearch, FiShoppingCart, FiHeart, FiBell, FiUser,
-  FiMenu, FiLogOut, FiSettings, FiPackage, FiChevronDown
+  FiMenu, FiLogOut, FiSettings, FiPackage, FiChevronDown,
+  FiGrid
 } from 'react-icons/fi';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
@@ -32,7 +33,7 @@ const Navbar = () => {
 
   const searchRef = useRef(null);
   const userMenuRef = useRef(null);
-  const notificationRef = useRef(null); // ✅ added ref
+  const notificationRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -53,7 +54,7 @@ const Navbar = () => {
     const handleClickOutside = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
       if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false);
-      if (notificationRef.current && !notificationRef.current.contains(e.target)) setShowNotifications(false); // ✅
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) setShowNotifications(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -170,26 +171,45 @@ const Navbar = () => {
                   className="absolute top-full left-0 right-0 dropdown-panel bg-white z-50 mt-2"
                 >
                   <div className="px-4 py-2 border-b border-gray-100">
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Suggestions</span>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Suggestions
+                    </span>
                   </div>
                   {suggestions.map((s) => (
                     <button
                       key={s._id}
                       onClick={() => {
-                        navigate(`/products/${s.slug || s._id}`);
+                        // ✅ Navigate to category or product
+                        if (s.isCategory) {
+                          navigate(`/products?search=${encodeURIComponent(s.name)}`);
+                        } else {
+                          navigate(`/products/${s.slug || s._id}`);
+                        }
                         setShowSuggestions(false);
                         setSearchQuery('');
                       }}
                       className="flex items-center gap-3 w-full px-4 py-3 hover:bg-amber-50/60 text-left transition-colors duration-100 border-b border-gray-50 last:border-0"
                     >
-                      {s.image && (
+                      {/* ✅ Category icon or product image */}
+                      {s.isCategory ? (
+                        <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                          <FiGrid size={18} className="text-primary-600" />
+                        </div>
+                      ) : s.image ? (
                         <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                           <img src={s.image} alt={s.name} className="w-full h-full object-cover" />
                         </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0" />
                       )}
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm text-gray-800 truncate">{s.name}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{s.brand} · {s.category}</p>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm text-gray-800 truncate">
+                          {s.isCategory ? `📂 ${s.name}` : s.name}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {s.isCategory ? 'Browse category' : `${s.brand || ''} · ${s.category || ''}`}
+                        </p>
                       </div>
                       <FiSearch size={13} className="ml-auto text-gray-300 flex-shrink-0" />
                     </button>
@@ -220,7 +240,7 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* ✅ FIXED Notifications - no longer goes off screen on mobile */}
+            {/* Notifications */}
             {user && (
               <div className="relative" ref={notificationRef}>
                 <button
@@ -260,7 +280,6 @@ const Navbar = () => {
                               {unreadCount} new
                             </span>
                           )}
-                          {/* ✅ Close button for mobile */}
                           <button
                             onClick={() => setShowNotifications(false)}
                             className="md:hidden text-gray-400 hover:text-gray-600 text-lg font-bold"
@@ -307,14 +326,25 @@ const Navbar = () => {
                   className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-all duration-150 hover:bg-white/10"
                   style={{ color: 'rgba(255,255,255,0.88)' }}
                 >
-                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/60">
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/60 bg-gray-200">
                     {user.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-gray-900 font-bold text-sm">
-                        {user.name?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="w-full h-full bg-gradient-to-br from-amber-400 to-amber-500 items-center justify-center text-gray-900 font-bold text-sm"
+                      style={{ display: user.avatar ? 'none' : 'flex' }}
+                    >
+                      {user.name?.charAt(0).toUpperCase()}
+                    </div>
                   </div>
                   <div className="hidden md:block text-left leading-tight">
                     <p className="text-[10px] text-white/45 font-medium">Hello,</p>
@@ -395,25 +425,71 @@ const Navbar = () => {
         {/* Mobile Search */}
         <AnimatePresence>
           {showMobileSearch && (
-            <motion.form
+            <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1, transition: { duration: 0.2 } }}
               exit={{ height: 0, opacity: 0, transition: { duration: 0.15 } }}
-              onSubmit={handleSearch}
-              className="mt-3 flex md:hidden overflow-hidden"
+              className="mt-3 md:hidden overflow-hidden"
             >
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products…"
-                className="nav-search-input"
-                autoFocus
-              />
-              <button type="submit" className="nav-search-btn">
-                <FiSearch size={17} />
-              </button>
-            </motion.form>
+              <form onSubmit={handleSearch} className="flex">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    fetchSuggestions(e.target.value);
+                  }}
+                  placeholder="Search products, categories…"
+                  className="nav-search-input"
+                  autoFocus
+                />
+                <button type="submit" className="nav-search-btn">
+                  <FiSearch size={17} />
+                </button>
+              </form>
+
+              {/* ✅ Mobile suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="bg-white rounded-xl mt-2 shadow-lg border border-gray-100 overflow-hidden">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s._id}
+                      onClick={() => {
+                        if (s.isCategory) {
+                          navigate(`/products?search=${encodeURIComponent(s.name)}`);
+                        } else {
+                          navigate(`/products/${s.slug || s._id}`);
+                        }
+                        setShowSuggestions(false);
+                        setShowMobileSearch(false);
+                        setSearchQuery('');
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50 text-left border-b border-gray-50 last:border-0"
+                    >
+                      {s.isCategory ? (
+                        <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                          <FiGrid size={14} className="text-primary-600" />
+                        </div>
+                      ) : s.image ? (
+                        <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <img src={s.image} alt={s.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm text-gray-800 truncate">
+                          {s.isCategory ? `📂 ${s.name}` : s.name}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {s.isCategory ? 'Browse category' : s.brand}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

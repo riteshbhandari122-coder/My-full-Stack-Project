@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
 const User = require('../models/User');
-const APIFeatures = require('../utils/apiFeatures');
+const Category = require('../models/Category');
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -11,13 +11,21 @@ const getProducts = asyncHandler(async (req, res) => {
 
   let query = { isActive: true };
 
-  // Search - accept both 'search' and 'keyword' params
+  // Search
   const searchTerm = keyword || search;
   if (searchTerm) {
+    // ✅ Find matching categories first
+    const matchingCats = await Category.find({
+      name: { $regex: searchTerm, $options: 'i' }
+    }).select('_id');
+    const catIds = matchingCats.map(c => c._id);
+
     query.$or = [
       { name: { $regex: searchTerm, $options: 'i' } },
       { brand: { $regex: searchTerm, $options: 'i' } },
       { description: { $regex: searchTerm, $options: 'i' } },
+      { tags: { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
+      ...(catIds.length > 0 ? [{ category: { $in: catIds } }] : []),
     ];
   }
 
@@ -87,10 +95,8 @@ const getProductById = asyncHandler(async (req, res) => {
     throw new Error('Product not found');
   }
 
-  // Increment views
   await Product.findByIdAndUpdate(product._id, { $inc: { views: 1 } });
 
-  // Track recently viewed
   if (req.user) {
     await User.findByIdAndUpdate(req.user._id, {
       $pull: { recentlyViewed: { product: product._id } },
@@ -164,31 +170,58 @@ const getRelatedProducts = asyncHandler(async (req, res) => {
   res.json({ success: true, products: related });
 });
 
-// @desc    Search products with auto-suggestions
+// @desc    Search suggestions
 // @route   GET /api/products/search/suggestions
 // @access  Public
 const getSearchSuggestions = asyncHandler(async (req, res) => {
   const { q } = req.query;
   if (!q || q.length < 2) return res.json({ success: true, suggestions: [] });
 
-  const products = await Product.find({
+  // ✅ Find matching categories
+  const matchingCategories = await Category.find({
     name: { $regex: q, $options: 'i' },
+  }).select('_id name slug');
+
+  const categoryIds = matchingCategories.map(c => c._id);
+
+  // ✅ Search products by name, brand, tags OR category
+  const products = await Product.find({
     isActive: true,
+    $or: [
+      { name: { $regex: q, $options: 'i' } },
+      { brand: { $regex: q, $options: 'i' } },
+      { tags: { $regex: q, $options: 'i' } },
+      ...(categoryIds.length > 0 ? [{ category: { $in: categoryIds } }] : []),
+    ],
   })
     .select('name brand category images slug')
     .populate('category', 'name')
-    .limit(10);
+    .limit(8);
 
-  const suggestions = products.map((p) => ({
+  const productSuggestions = products.map((p) => ({
     _id: p._id,
     name: p.name,
     brand: p.brand,
     category: p.category?.name,
     image: p.images[0]?.url,
     slug: p.slug,
+    isCategory: false,
   }));
 
-  res.json({ success: true, suggestions });
+  // ✅ Category suggestions at top
+  const categorySuggestions = matchingCategories.map(c => ({
+    _id: c._id,
+    name: c.name,
+    isCategory: true,
+    category: 'Category',
+    image: null,
+    slug: c.slug,
+  }));
+
+  res.json({
+    success: true,
+    suggestions: [...categorySuggestions, ...productSuggestions].slice(0, 10),
+  });
 });
 
 // @desc    Create product (Admin)
