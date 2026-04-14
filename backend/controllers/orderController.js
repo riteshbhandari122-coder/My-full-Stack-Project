@@ -34,15 +34,22 @@ const createOrder = asyncHandler(async (req, res) => {
       throw new Error(`Insufficient stock for "${product.name}"`);
     }
 
-    orderItems.push({
-      product: product._id,
-      name: product.name,
-      image: product.images[0]?.url || '',
-      price: item.price,
-      quantity: item.quantity,
-      color: item.color,
-      size: item.size,
-    });
+  // ✅ Find color-specific image
+const colorImage = item.color
+  ? product.images?.find(img =>
+      img.color?.toLowerCase() === item.color?.toLowerCase()
+    )?.url
+  : null;
+
+orderItems.push({
+  product: product._id,
+  name: product.name,
+  image: colorImage || product.images[0]?.url || '',
+  price: item.price,
+  quantity: item.quantity,
+  color: item.color || '',
+  size: item.size || '',
+});
 
     itemsPrice += item.price * item.quantity;
   }
