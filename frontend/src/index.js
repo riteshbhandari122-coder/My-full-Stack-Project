@@ -6,6 +6,16 @@ import App from './App';
 import { ThemeProvider } from './ThemeContext';
 import './index.css';
 
+// ✅ Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => console.log('✅ SW registered:', reg.scope))
+      .catch((err) => console.log('❌ SW failed:', err));
+  });
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <BrowserRouter>
@@ -24,10 +34,3 @@ root.render(
     </ThemeProvider>
   </BrowserRouter>
 );
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/firebase-messaging-sw.js')
-      .then(reg => console.log('SW Registered!', reg))
-      .catch(err => console.log('SW Registration failed:', err));
-  });
-}
