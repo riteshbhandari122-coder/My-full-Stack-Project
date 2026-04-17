@@ -80,6 +80,18 @@ export const useAuthStore = create(
         if (data.token) set({ token: data.token });
         return data;
       },
+
+      // ✅ NEW: Send OTP to email for password reset
+      sendOtp: async (email) => {
+        const { data } = await api.post('/auth/send-otp', { email });
+        return data;
+      },
+
+      // ✅ NEW: Verify OTP and set new password
+      verifyOtpAndReset: async ({ email, otp, newPassword }) => {
+        const { data } = await api.post('/auth/verify-otp', { email, otp, newPassword });
+        return data;
+      },
     }),
     {
       name: 'shopmart-auth',

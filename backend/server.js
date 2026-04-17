@@ -19,8 +19,7 @@ require('./config/passport');
 
 const app = express();
 
-// ✅ FIX 1: Tell Express to trust the Render proxy
-// This allows the rate limiter to see the USER'S IP instead of Render's IP.
+// ✅ Tell Express to trust the Render proxy
 app.set('trust proxy', 1);
 
 const server = http.createServer(app);
@@ -59,12 +58,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// ✅ FIX 2: Updated Rate Limiting
+// ✅ Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500, // Increased from 200 to 500 to be safer for production
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: 'Too many requests from this IP, please try again later.',
 });
 app.use('/api/', limiter);
@@ -80,8 +79,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true, // Keep true since you are on HTTPS (Render)
-    sameSite: 'none', 
+    secure: true,
+    sameSite: 'none',
     maxAge: 24 * 60 * 60 * 1000
   }
 }));
@@ -98,8 +97,9 @@ if (process.env.NODE_ENV === 'development') {
 // Static Files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Routes
+// ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/auth', require('./routes/auth.otp.routes')); // ✅ NEW: OTP password reset
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
