@@ -28,6 +28,8 @@
   "theme_color": "#0f1b2d",
   "background_color": "#0f1b2d",
   "categories": ["shopping", "ecommerce"],
+  "lang": "en",
+  "prefer_related_applications": false,
   "shortcuts": [
     {
       "name": "Shop Now",
@@ -55,7 +57,8 @@
     {
       "src": "logo512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "form_factor": "narrow"
     }
   ]
 }

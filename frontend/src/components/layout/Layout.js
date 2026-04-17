@@ -4,6 +4,7 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
 import LiveChat from '../common/LiveChat';
+import PWAInstallPrompt from '../common/PWAInstallPrompt';
 import { useTheme } from '../../ThemeContext';
 
 const Layout = () => {
@@ -32,6 +33,7 @@ const Layout = () => {
       <Footer />
       <MobileNav />
       <LiveChat />
+      <PWAInstallPrompt />
     </div>
   );
 };
