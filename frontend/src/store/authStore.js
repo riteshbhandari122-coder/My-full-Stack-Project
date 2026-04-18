@@ -64,32 +64,23 @@ export const useAuthStore = create(
         set((state) => ({ user: { ...state.user, ...userData } }));
       },
 
-      forgotPassword: async (email) => {
-        const { data } = await api.post('/auth/forgot-password', { email });
-        return data;
-      },
-
-      resetPassword: async (token, password) => {
-        const { data } = await api.put(`/auth/reset-password/${token}`, { password });
-        if (data.token) set({ token: data.token });
-        return data;
-      },
-
       updatePassword: async (currentPassword, newPassword) => {
         const { data } = await api.put('/auth/update-password', { currentPassword, newPassword });
         if (data.token) set({ token: data.token });
         return data;
       },
 
-      // ✅ NEW: Send OTP to email for password reset
+      // ✅ Step 1: Send OTP code to email
+      // POST /api/auth/forgot-password — now sends a 6-digit code instead of a link
       sendOtp: async (email) => {
-        const { data } = await api.post('/auth/send-otp', { email });
+        const { data } = await api.post('/auth/forgot-password', { email });
         return data;
       },
 
-      // ✅ NEW: Verify OTP and set new password
+      // ✅ Step 2: Verify OTP code and set new password
+      // POST /api/auth/reset-password
       verifyOtpAndReset: async ({ email, otp, newPassword }) => {
-        const { data } = await api.post('/auth/verify-otp', { email, otp, newPassword });
+        const { data } = await api.post('/auth/reset-password', { email, otp, newPassword });
         return data;
       },
     }),
