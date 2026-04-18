@@ -580,3 +580,36 @@
 * {
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
+/* ── Price Range Input Fix ────────────────────────────────────────────────── */
+/* Forces price filter inputs to show black text on white background always   */
+input[placeholder="Min"],
+input[placeholder="Max"] {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+  -webkit-text-fill-color: #111827 !important;
+}
+input[placeholder="Min"]::placeholder,
+input[placeholder="Max"]::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+}
+.dark input[placeholder="Min"],
+.dark input[placeholder="Max"] {
+  color: #f9fafb !important;
+  background-color: #1f2937 !important;
+  -webkit-text-fill-color: #f9fafb !important;
+}
+
+/* ── Mobile Nav Dark Theme ───────────────────────────────────────────────── */
+/* Override the white bg that clashes with the dark site theme               */
+nav.fixed.bottom-0 {
+  background: linear-gradient(180deg, #0f1b2d 0%, #0a1422 100%) !important;
+  border-top: 1px solid rgba(245,158,11,0.18) !important;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.35) !important;
+}
+nav.fixed.bottom-0 a {
+  color: rgba(255,255,255,0.5) !important;
+}
+nav.fixed.bottom-0 a.text-primary-600 {
+  color: #f59e0b !important;
+}
