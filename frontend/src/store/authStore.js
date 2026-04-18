@@ -77,7 +77,13 @@ export const useAuthStore = create(
         return data;
       },
 
-      // ✅ Step 2: Verify OTP code and set new password
+      // ✅ Step 2: Verify OTP code is correct (WITHOUT resetting password yet)
+      verifyOtp: async ({ email, otp }) => {
+        const { data } = await api.post("/auth/verify-otp", { email, otp });
+        return data;
+      },
+
+      // ✅ Step 3: Verified OTP + set new password together
       // POST /api/auth/reset-password
       verifyOtpAndReset: async ({ email, otp, newPassword }) => {
         const { data } = await api.post('/auth/reset-password', { email, otp, newPassword });

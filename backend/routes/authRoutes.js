@@ -148,11 +148,36 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// ─── Also keep /send-otp and /verify-otp aliases (used by authStore.js) ──────
-router.post('/send-otp', (req, res) => {
-  req.url = '/forgot-password';
-  router.handle(req, res);
+
+// ─── NEW: Verify OTP only (no password reset) — used at step 2 ───────────────
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and code are required' });
+    }
+    const key = email.toLowerCase().trim();
+    const record = otpStore.get(key);
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'No code found. Please request a new one.' });
+    }
+    if (Date.now() > record.expiresAt) {
+      otpStore.delete(key);
+      return res.status(400).json({ success: false, message: 'Code has expired. Please request a new one.' });
+    }
+    const isMatch = await bcrypt.compare(otp, record.hashedOtp);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Incorrect code. Please try again.' });
+    }
+    // Code correct — keep in store, still needed for final password reset
+    return res.status(200).json({ success: true, message: 'Code verified.' });
+  } catch (err) {
+    console.error('verify-otp error:', err);
+    return res.status(500).json({ success: false, message: 'Verification failed' });
+  }
 });
+
+
 
 // ─── Google OAuth Routes ──────────────────────────────────────────────────────
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

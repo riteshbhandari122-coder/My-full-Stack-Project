@@ -7,9 +7,9 @@ import toast from 'react-hot-toast';
 const RESEND_SECONDS = 60;
 
 const ForgotPasswordPage = () => {
-  const { sendOtp, verifyOtpAndReset } = useAuthStore();
+  const { sendOtp, verifyOtp, verifyOtpAndReset } = useAuthStore();
 
-  const [step, setStep] = useState(1); // 1 = email, 2 = OTP, 3 = new password, 4 = done
+  const [step, setStep] = useState(1); // 1=email, 2=OTP, 3=new password, 4=done
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [password, setPassword] = useState('');
@@ -21,11 +21,8 @@ const ForgotPasswordPage = () => {
   const otpRefs = useRef([]);
   const timerRef = useRef(null);
 
-  // Start countdown when step 2 is reached
   useEffect(() => {
-    if (step === 2) {
-      startCountdown();
-    }
+    if (step === 2) startCountdown();
     return () => clearInterval(timerRef.current);
   }, [step]);
 
@@ -35,11 +32,7 @@ const ForgotPasswordPage = () => {
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          setCanResend(true);
-          return 0;
-        }
+        if (prev <= 1) { clearInterval(timerRef.current); setCanResend(true); return 0; }
         return prev - 1;
       });
     }, 1000);
@@ -73,15 +66,13 @@ const ForgotPasswordPage = () => {
     setLoading(false);
   };
 
-  // OTP input auto-tab
+  // OTP input handlers
   const handleOtpChange = (value, index) => {
-    if (!/^\d*$/.test(value)) return; // digits only
+    if (!/^\d*$/.test(value)) return;
     const updated = [...otp];
     updated[index] = value.slice(-1);
     setOtp(updated);
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
   };
 
   const handleOtpKeyDown = (e, index) => {
@@ -99,18 +90,28 @@ const ForgotPasswordPage = () => {
     otpRefs.current[Math.min(pasted.length, 5)]?.focus();
   };
 
-  // Step 2: Verify OTP
-  const handleVerifyOtp = (e) => {
+  // Step 2: Verify OTP — calls backend to confirm code is correct BEFORE step 3
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     const code = otp.join('');
     if (code.length < 6) {
       toast.error('Please enter the full 6-digit code');
       return;
     }
-    setStep(3);
+    setLoading(true);
+    try {
+      await verifyOtp({ email, otp: code }); // ✅ backend check here
+      toast.success('Code verified!');
+      setStep(3);
+    } catch (err) {
+      toast.error(err.message || 'Incorrect code. Please try again.');
+      setOtp(['', '', '', '', '', '']); // clear boxes
+      otpRefs.current[0]?.focus();
+    }
+    setLoading(false);
   };
 
-  // Step 3: Reset Password
+  // Step 3: Reset password — OTP already verified above, this just saves new password
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
@@ -127,8 +128,8 @@ const ForgotPasswordPage = () => {
       toast.success('Password reset successfully!');
       setStep(4);
     } catch (err) {
-      toast.error(err.message || 'Reset failed. Please check your code.');
-      setStep(2); // send back to OTP if code is wrong
+      toast.error(err.message || 'Reset failed. Please try again.');
+      setStep(2);
     }
     setLoading(false);
   };
@@ -137,7 +138,7 @@ const ForgotPasswordPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-shopmart-blue to-gray-800 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
 
-        {/* ─── Step 1: Enter Email ─── */}
+        {/* Step 1: Enter Email */}
         {step === 1 && (
           <>
             <Link to="/login" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 text-sm">
@@ -163,21 +164,16 @@ const ForgotPasswordPage = () => {
                 </div>
               </div>
               <button type="submit" disabled={loading} className="w-full btn-primary py-3 flex items-center justify-center gap-2">
-                {loading
-                  ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  : 'Send Verification Code'}
+                {loading ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Send Verification Code'}
               </button>
             </form>
           </>
         )}
 
-        {/* ─── Step 2: Enter OTP ─── */}
+        {/* Step 2: Enter OTP */}
         {step === 2 && (
           <>
-            <button
-              onClick={() => setStep(1)}
-              className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 text-sm"
-            >
+            <button onClick={() => setStep(1)} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 text-sm">
               <FiArrowLeft size={16} /> Back
             </button>
             <div className="text-center mb-6">
@@ -187,9 +183,7 @@ const ForgotPasswordPage = () => {
                 We sent a 6-digit code to <span className="font-medium text-gray-700">{email}</span>
               </p>
             </div>
-
             <form onSubmit={handleVerifyOtp} className="space-y-4">
-              {/* OTP boxes */}
               <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
                 {otp.map((digit, i) => (
                   <input
@@ -205,37 +199,26 @@ const ForgotPasswordPage = () => {
                   />
                 ))}
               </div>
-
-              {/* Resend countdown */}
               <p className="text-center text-sm text-gray-500">
                 {canResend ? (
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    disabled={loading}
-                    className="text-shopmart-blue font-medium hover:underline"
-                  >
+                  <button type="button" onClick={handleResend} disabled={loading} className="text-shopmart-blue font-medium hover:underline">
                     Resend code
                   </button>
                 ) : (
                   <>Resend code in <span className="font-medium text-gray-700">{countdown}s</span></>
                 )}
               </p>
-
-              <button type="submit" className="w-full btn-primary py-3">
-                Verify Code
+              <button type="submit" disabled={loading} className="w-full btn-primary py-3 flex items-center justify-center gap-2">
+                {loading ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Verify Code'}
               </button>
             </form>
           </>
         )}
 
-        {/* ─── Step 3: New Password ─── */}
+        {/* Step 3: New Password */}
         {step === 3 && (
           <>
-            <button
-              onClick={() => setStep(2)}
-              className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 text-sm"
-            >
+            <button onClick={() => setStep(2)} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 text-sm">
               <FiArrowLeft size={16} /> Back
             </button>
             <div className="text-center mb-8">
@@ -243,10 +226,7 @@ const ForgotPasswordPage = () => {
               <p className="text-gray-500 mt-1">Choose a strong password for your account</p>
             </div>
             <form onSubmit={handleResetPassword} className="space-y-4">
-              {[
-                ['New Password', password, setPassword],
-                ['Confirm Password', confirmPassword, setConfirmPassword],
-              ].map(([label, val, setter]) => (
+              {[['New Password', password, setPassword], ['Confirm Password', confirmPassword, setConfirmPassword]].map(([label, val, setter]) => (
                 <div key={label}>
                   <label className="text-sm font-medium text-gray-700 mb-1 block">{label}</label>
                   <div className="relative">
@@ -263,20 +243,18 @@ const ForgotPasswordPage = () => {
                 </div>
               ))}
               <button type="submit" disabled={loading} className="w-full btn-primary py-3 flex items-center justify-center gap-2">
-                {loading
-                  ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  : 'Reset Password'}
+                {loading ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Reset Password'}
               </button>
             </form>
           </>
         )}
 
-        {/* ─── Step 4: Success ─── */}
+        {/* Step 4: Success */}
         {step === 4 && (
           <div className="text-center">
             <div className="text-6xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Reset!</h2>
-            <p className="text-gray-500 mb-6">Your password has been updated successfully. You can now log in with your new password.</p>
+            <p className="text-gray-500 mb-6">Your password has been updated. You can now log in.</p>
             <Link to="/login" className="btn-primary inline-block">Go to Login</Link>
           </div>
         )}
