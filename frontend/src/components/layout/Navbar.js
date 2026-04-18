@@ -532,6 +532,9 @@ const Navbar = () => {
           <Link to="/products?sort=newest" className="cat-link !text-emerald-400 hover:!text-emerald-300 font-semibold hover:bg-emerald-400/10">
             ✨ New Arrivals
           </Link>
+          <Link to="/spin" className="cat-link font-bold hover:bg-yellow-400/10 ml-1" style={{ color: '#fbbf24', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', padding: '4px 12px', animation: 'pulse-ring 2s infinite' }}>
+            🎰 Spin & Win
+          </Link>
         </div>
       </div>
     </nav>
