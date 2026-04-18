@@ -6,15 +6,8 @@ import App from './App';
 import { ThemeProvider } from './ThemeContext';
 import './index.css';
 
-// ✅ Register Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((reg) => console.log('✅ SW registered:', reg.scope))
-      .catch((err) => console.log('❌ SW failed:', err));
-  });
-}
+// ✅ SW is now registered in public/index.html <head> for faster recognition
+// by Chrome Android. No need to register again here.
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
