@@ -43,10 +43,17 @@ const DeliveryMap = ({ status, address }) => {
         window._deliveryMap = map;
 
         // OpenStreetMap tiles — completely free
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
-          maxZoom: 19,
-        }).addTo(map);
+        // Satellite base layer
+        window.L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          { attribution: 'Tiles © Esri', maxZoom: 19 }
+        ).addTo(map);
+
+        // Labels overlay on top of satellite
+        window.L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+          { attribution: '', maxZoom: 19, opacity: 0.8 }
+        ).addTo(map);
 
         // Store marker (gold)
         const storeIcon = window.L.divIcon({
