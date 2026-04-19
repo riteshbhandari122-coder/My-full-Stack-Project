@@ -44,20 +44,7 @@ const paymentMethods = [
     border: 'border-green-200',
     selectedBorder: 'border-green-500',
     selectedBg: 'bg-green-50',
-  },
-  {
-    value: 'esewa',
-    label: 'eSewa',
-    desc: 'Nepal\'s most popular digital wallet',
-    logoUrl: 'https://esewa.com.np/common/images/esewa_logo.png',
-    fallbackColor: '#60BB47',
-    fallbackText: 'eSewa',
-    color: 'from-green-400 to-green-600',
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    selectedBorder: 'border-green-500',
-    selectedBg: 'bg-green-50',
-  },
+  }
   {
     value: 'khalti',
     label: 'Khalti',
@@ -171,9 +158,7 @@ const CheckoutPage = () => {
       });
 
       // Handle different payment methods
-      if (paymentMethod === 'esewa') {
-        handleEsewaPayment(data.order._id, total);
-      } else if (paymentMethod === 'khalti') {
+      if (paymentMethod === 'khalti') {
         handleKhaltiPayment(data.order._id, total);
       } else {
         navigate(`/order-success/${data.order._id}`);
@@ -182,32 +167,6 @@ const CheckoutPage = () => {
       toast.error(err.message || 'Failed to place order');
     }
     setLoading(false);
-  };
-
-  const handleEsewaPayment = (orderId, amount) => {
-    const params = {
-      amt: amount,
-      psc: 0,
-      pdc: 0,
-      txAmt: 0,
-      tAmt: amount,
-      pid: orderId,
-      scd: process.env.REACT_APP_ESEWA_MERCHANT_ID || 'EPAYTEST',
-      su: `${window.location.origin}/order-success/${orderId}`,
-      fu: `${window.location.origin}/checkout`,
-    };
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://uat.esewa.com.np/epay/main';
-    Object.entries(params).forEach(([key, value]) => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = value;
-      form.appendChild(input);
-    });
-    document.body.appendChild(form);
-    form.submit();
   };
 
   const handleKhaltiPayment = async (orderId, amount) => {
@@ -354,13 +313,7 @@ const CheckoutPage = () => {
                 </div>
               )}
 
-              {paymentMethod === 'esewa' && (
-                <div className="mt-4 p-3 bg-green-50 rounded-xl flex items-center gap-2">
-                  <span className="text-green-600 text-xs font-medium">✓ You will be redirected to eSewa to complete payment</span>
-                </div>
-              )}
-
-              {paymentMethod === 'khalti' && (
+{paymentMethod === 'khalti' && (
                 <div className="mt-4 p-3 bg-purple-50 rounded-xl flex items-center gap-2">
                   <span className="text-purple-600 text-xs font-medium">✓ You will be redirected to Khalti to complete payment</span>
                 </div>
