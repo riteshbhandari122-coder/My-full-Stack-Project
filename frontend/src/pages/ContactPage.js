@@ -176,7 +176,7 @@ const ContactPage = () => {
   const info = [
     { icon: FiMapPin, label: 'Address',      value: 'New Road, Kathmandu, Nepal',  color: '#f59e0b' },
     { icon: FiPhone,  label: 'Phone',         value: '+977-9800000000',              color: '#3b82f6' },
-    { icon: FiMail,   label: 'Email',         value: 'support@shopmart.com',         color: '#10b981' },
+    { icon: FiMail,   label: 'Email',         value: 'shopmartsupport@gmail.com',         color: '#10b981' },
     { icon: FiClock,  label: 'Support Hours', value: 'Sun–Fri, 9AM – 6PM',          color: '#8b5cf6' },
   ];
 

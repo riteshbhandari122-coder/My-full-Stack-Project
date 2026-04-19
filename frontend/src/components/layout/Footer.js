@@ -207,7 +207,7 @@ const Footer = () => {
               {[
                 { Icon: FiMapPin, text: 'Kathmandu, Nepal' },
                 { Icon: FiPhone,  text: '+977-9800000000' },
-                { Icon: FiMail,   text: 'support@shopmart.com' },
+                { Icon: FiMail,   text: 'shopmartsupport@gmail.com' },
               ].map(({ Icon, text }) => (
                 <li key={text} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                   <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -252,7 +252,7 @@ const Footer = () => {
                 <FiMapPin size={16} /> Visit Contact Page
               </Link>
               <a
-                href="mailto:support@shopmart.com"
+                href="mailto:shopmartsupport@gmail.com"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   padding: '13px 28px', borderRadius: '14px',
