@@ -44,7 +44,20 @@ const paymentMethods = [
     border: 'border-green-200',
     selectedBorder: 'border-green-500',
     selectedBg: 'bg-green-50',
-  }
+  },
+  {
+    value: 'esewa',
+    label: 'eSewa',
+    desc: "Nepal's most popular digital wallet",
+    logoUrl: 'https://esewa.com.np/common/images/esewa_logo.png',
+    fallbackColor: '#60BB47',
+    fallbackText: 'eSewa',
+    color: 'from-green-400 to-green-600',
+    bg: 'bg-green-50',
+    border: 'border-green-200',
+    selectedBorder: 'border-green-500',
+    selectedBg: 'bg-green-50',
+  },
   {
     value: 'khalti',
     label: 'Khalti',
