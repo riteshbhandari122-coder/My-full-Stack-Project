@@ -221,6 +221,69 @@ const Footer = () => {
         </div>
       </div>
 
+      {/* ✅ Contact Us Banner */}
+      <div style={{ background: 'linear-gradient(135deg, #0f1b2d 0%, #1a2740 100%)', borderTop: '1px solid rgba(245,158,11,0.15)', borderBottom: '1px solid rgba(245,158,11,0.15)', padding: '36px 0' }}>
+        <div className="max-w-7xl mx-auto px-4">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FiMail size={24} color="#f59e0b" />
+            </div>
+            <div>
+              <h3 style={{ color: 'white', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 'clamp(1.2rem,3vw,1.6rem)', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+                Have a question or need help?
+              </h3>
+              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem', margin: 0, maxWidth: '420px' }}>
+                Our support team is ready to help you. Reach out and we will reply within 24 hours.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px' }}>
+              <Link
+                to="/contact"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '13px 28px', borderRadius: '14px', border: 'none',
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  color: '#0f1b2d', fontFamily: 'Syne, sans-serif',
+                  fontWeight: 800, fontSize: '0.95rem', textDecoration: 'none',
+                  boxShadow: '0 4px 20px rgba(245,158,11,0.4)',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                <FiMapPin size={16} /> Visit Contact Page
+              </Link>
+              <a
+                href="mailto:support@shopmart.com"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '13px 28px', borderRadius: '14px',
+                  border: '1.5px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: 'rgba(255,255,255,0.8)', fontFamily: 'Syne, sans-serif',
+                  fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                <FiMail size={16} /> Email Us
+              </a>
+              <a
+                href="tel:+9779800000000"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '13px 28px', borderRadius: '14px',
+                  border: '1.5px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: 'rgba(255,255,255,0.8)', fontFamily: 'Syne, sans-serif',
+                  fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                <FiPhone size={16} /> Call Us
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Bottom Bar */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 0' }}>
         <div className="max-w-7xl mx-auto px-4" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
