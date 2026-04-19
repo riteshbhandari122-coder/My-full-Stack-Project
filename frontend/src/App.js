@@ -16,6 +16,7 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import SpinWheelPage from './pages/SpinWheelPage'; // ✅ NEW
+import ContactPage from './pages/ContactPage'; // ✅ NEW
 
 // Pages - Auth
 import LoginPage from './pages/auth/LoginPage';
@@ -68,6 +69,7 @@ function App() {
           <Route path="search" element={<SearchPage />} />
           <Route path="cart" element={<CartPage />} />
           <Route path="spin" element={<SpinWheelPage />} /> {/* ✅ NEW */}
+          <Route path="contact" element={<ContactPage />} /> {/* ✅ NEW */
 
           {/* Auth Routes */}
           <Route path="login" element={user ? <Navigate to="/" /> : <LoginPage />} />
