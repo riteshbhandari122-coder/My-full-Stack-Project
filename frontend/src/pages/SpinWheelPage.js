@@ -143,7 +143,7 @@ const SpinWheelPage = () => {
   const [spinsLeft,  setSpinsLeft]  = useState(3);
   const [copied,     setCopied]     = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [wheelSize,  setWheelSize]  = useState(460);
+  const [wheelSize,  setWheelSize]  = useState(() => typeof window !== 'undefined' ? Math.min(window.innerWidth - 40, 460) : 320);
 
   useEffect(() => {
     const updateSize = () => {
@@ -218,7 +218,7 @@ const SpinWheelPage = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a1220', fontFamily: '"DM Sans", sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#0a1220', fontFamily: '"DM Sans", sans-serif', overflowX: 'hidden' }}>
       <style>{`
         @keyframes fadeUp {
           from { opacity:0; transform:translateY(14px); }
@@ -237,7 +237,7 @@ const SpinWheelPage = () => {
         .copy-btn:hover { opacity:0.85; }
       `}</style>
 
-      <div style={{ maxWidth: '580px', margin: '0 auto', padding: '28px 20px 80px' }}>
+      <div style={{ maxWidth: '580px', margin: '0 auto', padding: 'clamp(80px, 14vw, 100px) 16px 80px', overflowX: 'hidden' }}>
 
         {/* Header */}
         <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'32px', animation:'fadeUp 0.4s ease' }}>
