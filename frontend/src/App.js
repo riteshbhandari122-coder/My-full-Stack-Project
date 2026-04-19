@@ -15,8 +15,8 @@ import SearchPage from './pages/SearchPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
-import SpinWheelPage from './pages/SpinWheelPage'; // ✅ NEW
-import ContactPage from './pages/ContactPage'; // ✅ NEW
+import SpinWheelPage from './pages/SpinWheelPage'; 
+import ContactPage from './pages/ContactPage'; 
 
 // Pages - Auth
 import LoginPage from './pages/auth/LoginPage';
@@ -52,7 +52,7 @@ function App() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]); // Best practice: include checkAuth in dependency array
 
   if (loading) return <LoadingScreen />;
 
@@ -68,8 +68,9 @@ function App() {
           <Route path="category/:slug" element={<CategoryPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="cart" element={<CartPage />} />
-          <Route path="spin" element={<SpinWheelPage />} /> {/* ✅ NEW */}
-          <Route path="contact" element={<ContactPage />} /> {/* ✅ NEW */
+          <Route path="spin" element={<SpinWheelPage />} />
+          {/* Fixed the line below: added closing tag and brace */}
+          <Route path="contact" element={<ContactPage />} /> 
 
           {/* Auth Routes */}
           <Route path="login" element={user ? <Navigate to="/" /> : <LoginPage />} />
