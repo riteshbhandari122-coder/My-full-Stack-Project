@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiMapPin, FiPhone, FiMail, FiClock, FiSend, FiLayers } from 'react-icons/fi';
+import api from '../utils/api';
 import toast from 'react-hot-toast';
 
 // ShopMart store — Kathmandu New Road area
@@ -162,9 +163,13 @@ const ContactPage = () => {
       return;
     }
     setSending(true);
-    await new Promise(r => setTimeout(r, 1200));
-    toast.success('Message sent! We will reply within 24 hours.');
-    setForm({ name: '', email: '', subject: '', message: '' });
+    try {
+      await api.post('/auth/contact', form);
+      toast.success('Message sent! We will reply within 24 hours. ✅');
+      setForm({ name: '', email: '', subject: '', message: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send. Please try again.');
+    }
     setSending(false);
   };
 

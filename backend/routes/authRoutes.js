@@ -12,11 +12,10 @@ const {
   verifyEmail,
   updatePassword,
 } = require('../controllers/authController');
-const User = require('../models/User'); // adjust path if needed
-const { sendEmail, emailTemplates } = require('../utils/sendEmail'); // adjust path if needed
+const User = require('../models/User'); 
+const { sendEmail, emailTemplates } = require('../utils/sendEmail');
 
-// ─── OTP Store (in-memory, works fine for production at small scale) ──────────
-// For high traffic, replace with Redis. Structure: { email: { hashedOtp, expiresAt } }
+// ─── OTP Store ──────────────────────────────────────────────────────────────
 const otpStore = new Map();
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -29,7 +28,6 @@ router.get('/verify-email/:token', verifyEmail);
 router.put('/update-password', protect, updatePassword);
 
 // ─── NEW: Send OTP to email ───────────────────────────────────────────────────
-// Replaces the old POST /forgot-password (which sent a reset link)
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -37,8 +35,10 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email is required' });
     }
 
-    // Check user exists — but return same message either way (prevents email enumeration)
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: cleanEmail });
+    
+    // Always return success to prevent email enumeration
     if (!user) {
       return res.status(200).json({
         success: true,
@@ -46,22 +46,17 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Hash the OTP before storing (security best practice)
     const salt = await bcrypt.genSalt(10);
     const hashedOtp = await bcrypt.hash(otp, salt);
 
-    // Store with expiry
-    otpStore.set(email.toLowerCase().trim(), {
+    otpStore.set(cleanEmail, {
       hashedOtp,
       expiresAt: Date.now() + OTP_EXPIRY_MS,
     });
 
-    // Send the OTP email
     await sendEmail({
-      to: email,
+      to: cleanEmail,
       subject: 'ShopMart — Your Password Reset Code',
       html: emailTemplates.otpEmail(otp),
     });
@@ -71,119 +66,119 @@ router.post('/forgot-password', async (req, res) => {
       message: 'Verification code sent to your email.',
     });
   } catch (err) {
-    console.error('forgot-password (OTP) error:', err);
+    console.error('forgot-password error:', err);
     return res.status(500).json({ success: false, message: 'Email could not be sent' });
   }
 });
 
 // ─── NEW: Verify OTP and reset password ──────────────────────────────────────
-// Replaces the old PUT /reset-password/:token
 router.post('/reset-password', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
 
     if (!email || !otp || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email, code, and new password are required',
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 6 characters',
-      });
+      return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
     const key = email.toLowerCase().trim();
     const record = otpStore.get(key);
 
     if (!record) {
-      return res.status(400).json({
-        success: false,
-        message: 'No code found for this email. Please request a new one.',
-      });
+      return res.status(400).json({ success: false, message: 'No code found. Request a new one.' });
     }
 
     if (Date.now() > record.expiresAt) {
       otpStore.delete(key);
-      return res.status(400).json({
-        success: false,
-        message: 'Code has expired. Please request a new one.',
-      });
+      return res.status(400).json({ success: false, message: 'Code has expired.' });
     }
 
     const isMatch = await bcrypt.compare(otp, record.hashedOtp);
     if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: 'Incorrect code. Please try again.',
-      });
+      return res.status(400).json({ success: false, message: 'Incorrect code.' });
     }
 
-    // Update password
     const user = await User.findOne({ email: key });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-
-    // Clear legacy token fields if they exist on the model
-    if (user.resetPasswordToken !== undefined) user.resetPasswordToken = undefined;
-    if (user.resetPasswordExpire !== undefined) user.resetPasswordExpire = undefined;
+    // Assigning raw password - assuming your User model has a pre-save hook for hashing!
+    user.password = newPassword; 
+    
+    // Clear legacy fields
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
 
     await user.save();
-    otpStore.delete(key); // clean up used OTP
+    otpStore.delete(key);
 
-    return res.status(200).json({
-      success: true,
-      message: 'Password reset successfully.',
-    });
+    return res.status(200).json({ success: true, message: 'Password reset successfully.' });
   } catch (err) {
-    console.error('reset-password (OTP) error:', err);
+    console.error('reset-password error:', err);
     return res.status(500).json({ success: false, message: 'Failed to reset password' });
   }
 });
 
-
-// ─── NEW: Verify OTP only (no password reset) — used at step 2 ───────────────
+// ─── NEW: Verify OTP only ────────────────────────────────────────────────────
 router.post('/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
-    if (!email || !otp) {
-      return res.status(400).json({ success: false, message: 'Email and code are required' });
-    }
-    const key = email.toLowerCase().trim();
+    const key = email?.toLowerCase().trim();
     const record = otpStore.get(key);
-    if (!record) {
-      return res.status(400).json({ success: false, message: 'No code found. Please request a new one.' });
+
+    if (!record || Date.now() > record.expiresAt) {
+      if (record) otpStore.delete(key);
+      return res.status(400).json({ success: false, message: 'Code invalid or expired.' });
     }
-    if (Date.now() > record.expiresAt) {
-      otpStore.delete(key);
-      return res.status(400).json({ success: false, message: 'Code has expired. Please request a new one.' });
-    }
+
     const isMatch = await bcrypt.compare(otp, record.hashedOtp);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Incorrect code. Please try again.' });
+      return res.status(400).json({ success: false, message: 'Incorrect code.' });
     }
-    // Code correct — keep in store, still needed for final password reset
+
     return res.status(200).json({ success: true, message: 'Code verified.' });
   } catch (err) {
-    console.error('verify-otp error:', err);
     return res.status(500).json({ success: false, message: 'Verification failed' });
   }
 });
 
+// ─── Contact Form ───────────────────────────────────────────────────────────
+router.post('/contact', async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
 
+    if (!name || !email || !message) {
+      return res.status(400).json({ success: false, message: 'Required fields missing' });
+    }
 
-// ─── Google OAuth Routes ──────────────────────────────────────────────────────
+    const messageHtml = message.replace(/\n/g, '<br/>'); // Fixed regex
+
+    // Admin Notification
+    await sendEmail({
+      to: process.env.EMAIL_USER,
+      subject: `📬 ShopMart Contact: ${subject || 'New Message'}`,
+      html: `<h3>New Message from ${name} (${email})</h3><p>${messageHtml}</p>`
+      // Use your existing styled HTML here
+    });
+
+    // User Confirmation
+    await sendEmail({
+      to: email,
+      subject: 'Message Received — ShopMart',
+      html: `<p>Hi ${name}, we received your message and will reply soon!</p>`
+    });
+
+    return res.status(200).json({ success: true, message: 'Message sent!' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to send message.' });
+  }
+});
+
+// ─── Google OAuth ────────────────────────────────────────────────────────────
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL}/login` }),
+  passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL}/login`, session: false }),
   async (req, res) => {
     try {
       const token = jwt.sign(
