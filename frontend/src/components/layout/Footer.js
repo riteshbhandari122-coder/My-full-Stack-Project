@@ -156,7 +156,7 @@ const Footer = () => {
             <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
                 { label: 'About Us', to: '/about' },
-                { label: 'Contact', to: '/contact' },
+                { label: 'Contact Us', to: '/contact' },
                 { label: 'Blog', to: '/blog' },
                 { label: 'Careers', to: '/careers' },
                 { label: 'Press', to: '/press' },

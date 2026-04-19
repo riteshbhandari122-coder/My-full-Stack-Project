@@ -3,8 +3,8 @@ import { FiMapPin, FiPhone, FiMail, FiClock, FiSend, FiLayers } from 'react-icon
 import toast from 'react-hot-toast';
 
 // ShopMart store — Kathmandu New Road area
-const STORE_LAT = 27.7041;
-const STORE_LNG = 85.3145;
+const STORE_LAT = 27.70333;
+const STORE_LNG = 85.31239;
 
 const StoreMap = () => {
   const [mapType, setMapType] = useState('satellite');
@@ -25,7 +25,7 @@ const StoreMap = () => {
       const map = window.L.map('store-map', {
         scrollWheelZoom: false,
         zoomControl: true,
-      }).setView([STORE_LAT, STORE_LNG], 17);
+      }).setView([STORE_LAT, STORE_LNG], 18);
       window._storeMap = map;
       window._currentLayer = null;
 
@@ -66,7 +66,7 @@ const StoreMap = () => {
         .bindPopup(`
           <div style="font-family:sans-serif;padding:6px;min-width:180px;">
             <div style="font-size:15px;font-weight:800;color:#0f1b2d;margin-bottom:4px;">🛍️ ShopMart</div>
-            <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">New Road, Kathmandu, Nepal</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">New Road, Kathmandu 44600, Nepal</div>
             <div style="font-size:11px;background:#fef3c7;color:#92400e;padding:4px 8px;border-radius:6px;font-weight:600;">📦 Free delivery across Kathmandu</div>
           </div>
         `, { maxWidth: 220 });
@@ -139,7 +139,7 @@ const StoreMap = () => {
           <div style={{ fontSize: '0.78rem', color: '#b45309' }}>New Road, Kathmandu 44600, Bagmati Province, Nepal</div>
         </div>
         <a
-          href="https://www.google.com/maps?q=27.7041,85.3145"
+          href="https://www.google.com/maps?q=27.70333,85.31239&z=17&t=k"
           target="_blank"
           rel="noreferrer"
           style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: '10px', background: '#0f1b2d', color: 'white', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', fontFamily: '"Syne", sans-serif' }}
