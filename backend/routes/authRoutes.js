@@ -50,7 +50,7 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// ─── Reset Password ───────────────────────────────────────────────────────────
+// ─── Reset Password + Auto Login ──────────────────────────────────────────────
 router.post('/reset-password', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
@@ -60,7 +60,10 @@ router.post('/reset-password', async (req, res) => {
     const key = email.toLowerCase().trim();
     const record = otpStore.get(key);
     if (!record) return res.status(400).json({ success: false, message: 'No code found. Please request a new one.' });
-    if (Date.now() > record.expiresAt) { otpStore.delete(key); return res.status(400).json({ success: false, message: 'Code has expired. Please request a new one.' }); }
+    if (Date.now() > record.expiresAt) {
+      otpStore.delete(key);
+      return res.status(400).json({ success: false, message: 'Code has expired. Please request a new one.' });
+    }
 
     const isMatch = await bcrypt.compare(otp, record.hashedOtp);
     if (!isMatch) return res.status(400).json({ success: false, message: 'Incorrect code. Please try again.' });
@@ -68,14 +71,48 @@ router.post('/reset-password', async (req, res) => {
     const user = await User.findOne({ email: key });
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
+    // ✅ FIX: Hash password manually and use findByIdAndUpdate to bypass
+    // the model's pre-save hook which would double-hash the password
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    if (user.resetPasswordToken !== undefined) user.resetPasswordToken = undefined;
-    if (user.resetPasswordExpire !== undefined) user.resetPasswordExpire = undefined;
-    await user.save();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await User.findByIdAndUpdate(
+      user._id,
+      {
+        $set: {
+          password: hashedPassword,
+          resetPasswordToken: undefined,
+          resetPasswordExpire: undefined,
+        },
+        $unset: {
+          resetPasswordToken: '',
+          resetPasswordExpire: '',
+        }
+      },
+      { new: true }
+    );
+
     otpStore.delete(key);
 
-    return res.status(200).json({ success: true, message: 'Password reset successfully.' });
+    // ✅ Auto login — generate JWT token so user is logged in immediately
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE || '30d' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset successfully.',
+      token,           // ← frontend uses this to log in automatically
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+      },
+    });
   } catch (err) {
     console.error('reset-password error:', err);
     return res.status(500).json({ success: false, message: 'Failed to reset password' });
@@ -91,7 +128,10 @@ router.post('/verify-otp', async (req, res) => {
     const key = email.toLowerCase().trim();
     const record = otpStore.get(key);
     if (!record) return res.status(400).json({ success: false, message: 'No code found. Please request a new one.' });
-    if (Date.now() > record.expiresAt) { otpStore.delete(key); return res.status(400).json({ success: false, message: 'Code has expired. Please request a new one.' }); }
+    if (Date.now() > record.expiresAt) {
+      otpStore.delete(key);
+      return res.status(400).json({ success: false, message: 'Code has expired. Please request a new one.' });
+    }
 
     const isMatch = await bcrypt.compare(otp, record.hashedOtp);
     if (!isMatch) return res.status(400).json({ success: false, message: 'Incorrect code. Please try again.' });
@@ -111,7 +151,6 @@ router.post('/contact', async (req, res) => {
 
     const msgHtml = message.split('\n').join('<br/>');
 
-    // Email to ShopMart support
     await sendEmail({
       to: 'shopmartsupport@gmail.com',
       subject: 'ShopMart Contact: ' + (subject || 'New message from ' + name),
@@ -128,13 +167,10 @@ router.post('/contact', async (req, res) => {
         + '<div style="background:white;padding:16px;border-radius:8px;border-left:4px solid #667eea;color:#333;line-height:1.7;">' + msgHtml + '</div>'
         + '<div style="margin-top:24px;padding:12px 16px;background:#e8f4fd;border-radius:8px;">'
         + '<p style="margin:0;font-size:13px;color:#555;">Reply to <strong>' + email + '</strong> to respond to <strong>' + name + '</strong></p>'
-        + '</div>'
-        + '</div>'
-        + '<div style="padding:16px;background:#eee;text-align:center;"><p style="margin:0;font-size:12px;color:#aaa;">ShopMart Nepal Contact Form</p></div>'
-        + '</div>',
+        + '</div></div>'
+        + '<div style="padding:16px;background:#eee;text-align:center;"><p style="margin:0;font-size:12px;color:#aaa;">ShopMart Nepal Contact Form</p></div></div>',
     });
 
-    // Confirmation email to user
     await sendEmail({
       to: email,
       subject: 'We received your message — ShopMart Support',
@@ -142,14 +178,12 @@ router.post('/contact', async (req, res) => {
         + '<div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:30px;text-align:center;"><h1 style="color:white;margin:0;">Message Received!</h1></div>'
         + '<div style="padding:30px;background:#f9f9f9;">'
         + '<h2>Hi ' + name + '!</h2>'
-        + '<p>Thank you for contacting ShopMart. We have received your message and will get back to you within <strong>24 hours</strong>.</p>'
+        + '<p>Thank you for contacting ShopMart. We will get back to you within <strong>24 hours</strong>.</p>'
         + '<div style="background:white;padding:16px;border-radius:8px;border-left:4px solid #667eea;color:#555;margin:20px 0;">'
-        + '<strong>Your message:</strong><br/><br/>' + msgHtml
-        + '</div>'
+        + '<strong>Your message:</strong><br/><br/>' + msgHtml + '</div>'
         + '<p style="color:#888;font-size:13px;">Urgent? Call us at <strong>+977-9800000000</strong></p>'
         + '</div>'
-        + '<div style="padding:16px;background:#eee;text-align:center;"><p style="margin:0;font-size:12px;color:#aaa;">© ShopMart Nepal · shopmartsupport@gmail.com</p></div>'
-        + '</div>',
+        + '<div style="padding:16px;background:#eee;text-align:center;"><p style="margin:0;font-size:12px;color:#aaa;">© ShopMart Nepal · shopmartsupport@gmail.com</p></div></div>',
     });
 
     return res.status(200).json({ success: true, message: 'Message sent successfully!' });

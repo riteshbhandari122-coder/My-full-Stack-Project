@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiArrowLeft, FiLock } from 'react-icons/fi';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 const RESEND_SECONDS = 60;
 
 const ForgotPasswordPage = () => {
+  const navigate = useNavigate();
   const { sendOtp, verifyOtp, verifyOtpAndReset } = useAuthStore();
 
   const [step, setStep] = useState(1); // 1=email, 2=OTP, 3=new password, 4=done
@@ -111,7 +112,7 @@ const ForgotPasswordPage = () => {
     setLoading(false);
   };
 
-  // Step 3: Reset password — OTP already verified above, this just saves new password
+  // Step 3: Reset password — auto login after success
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
@@ -124,9 +125,16 @@ const ForgotPasswordPage = () => {
     }
     setLoading(true);
     try {
-      await verifyOtpAndReset({ email, otp: otp.join(''), newPassword: password });
-      toast.success('Password reset successfully!');
-      setStep(4);
+      const data = await verifyOtpAndReset({ email, otp: otp.join(''), newPassword: password });
+      toast.success('Password reset successfully! Logging you in...');
+      // Auto login if backend returns token
+      if (data.token) {
+        const { loginWithToken } = useAuthStore.getState();
+        await loginWithToken(data.token);
+        navigate('/');
+      } else {
+        setStep(4);
+      }
     } catch (err) {
       toast.error(err.message || 'Reset failed. Please try again.');
       setStep(2);
