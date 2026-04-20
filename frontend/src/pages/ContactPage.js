@@ -140,7 +140,7 @@ const StoreMap = () => {
           <div style={{ fontSize: '0.78rem', color: '#b45309' }}>New Road, Kathmandu 44600, Bagmati Province, Nepal</div>
         </div>
         <a
-          href="https://www.google.com/maps?q=27.70333,85.31239&z=17&t=k"
+          href="https://www.google.com/maps/dir/?api=1&destination=27.70333,85.31239"
           target="_blank"
           rel="noreferrer"
           style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: '10px', background: '#0f1b2d', color: 'white', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', fontFamily: '"Syne", sans-serif' }}
@@ -174,10 +174,10 @@ const ContactPage = () => {
   };
 
   const info = [
-    { icon: FiMapPin, label: 'Address',      value: 'New Road, Kathmandu, Nepal',  color: '#f59e0b' },
-    { icon: FiPhone,  label: 'Phone',         value: '+977-9800000000',              color: '#3b82f6' },
+    { icon: FiMapPin, label: 'Address',       value: 'New Road, Kathmandu, Nepal',  color: '#f59e0b' },
+    { icon: FiPhone,  label: 'Phone',         value: '+977-9800000000',               color: '#3b82f6' },
     { icon: FiMail,   label: 'Email',         value: 'shopmartsupport@gmail.com',         color: '#10b981', href: 'mailto:shopmartsupport@gmail.com?subject=ShopMart Support Query' },
-    { icon: FiClock,  label: 'Support Hours', value: 'Sun–Fri, 9AM – 6PM',          color: '#8b5cf6' },
+    { icon: FiClock,  label: 'Support Hours', value: 'Sun–Fri, 9AM – 6PM',           color: '#8b5cf6' },
   ];
 
   return (
@@ -221,7 +221,7 @@ const ContactPage = () => {
                 <div style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 500 }}>{value}</div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
 
         {/* Contact form */}
