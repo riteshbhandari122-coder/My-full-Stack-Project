@@ -266,7 +266,7 @@ const Footer = () => {
                 <FiMail size={16} /> Email Us
               </a>
               <a
-                href="tel:+9779800000000"
+                href="tel:+9779800000000" target="_blank" rel="noreferrer"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   padding: '13px 28px', borderRadius: '14px',

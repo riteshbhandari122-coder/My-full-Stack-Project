@@ -176,7 +176,7 @@ const ContactPage = () => {
   const info = [
     { icon: FiMapPin, label: 'Address',      value: 'New Road, Kathmandu, Nepal',  color: '#f59e0b' },
     { icon: FiPhone,  label: 'Phone',         value: '+977-9800000000',              color: '#3b82f6' },
-    { icon: FiMail,   label: 'Email',         value: 'shopmartsupport@gmail.com',         color: '#10b981' },
+    { icon: FiMail,   label: 'Email',         value: 'shopmartsupport@gmail.com',         color: '#10b981', href: 'mailto:shopmartsupport@gmail.com?subject=ShopMart Support Query' },
     { icon: FiClock,  label: 'Support Hours', value: 'Sun–Fri, 9AM – 6PM',          color: '#8b5cf6' },
   ];
 
@@ -202,8 +202,17 @@ const ContactPage = () => {
 
         {/* Info cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {info.map(({ icon: Icon, label, value, color }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px', background: 'white', borderRadius: '14px', border: '1px solid #f1f5f9', boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}>
+          {info.map((item) => { const { icon: Icon, label, value, color } = item; return (
+            <div key={label} onClick={() => {
+                  if (item.href) {
+                    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                    if (isMobile) {
+                      window.location.href = 'mailto:shopmartsupport@gmail.com?subject=ShopMart Support Query';
+                    } else {
+                      window.open('https://mail.google.com/mail/?view=cm&to=shopmartsupport@gmail.com&su=ShopMart+Support+Query', '_blank');
+                    }
+                  }
+                }} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px', background: 'white', borderRadius: '14px', border: '1px solid #f1f5f9', boxShadow: '0 1px 8px rgba(0,0,0,0.05)', cursor: item.href ? 'pointer' : 'default' }}>
               <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: `${color}15`, border: `1px solid ${color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Icon size={18} color={color} />
               </div>
