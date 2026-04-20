@@ -203,7 +203,7 @@ const ForgotPasswordPage = () => {
                     value={digit}
                     onChange={(e) => handleOtpChange(e.target.value, i)}
                     onKeyDown={(e) => handleOtpKeyDown(e, i)}
-                    className="w-12 h-14 text-center text-xl font-bold text-black bg-white border-2 border-gray-400 rounded-xl focus:border-shopmart-blue focus:outline-none transition-colors" style={{backgroundColor: "#ffffff", color: "#000000"}}
+                    style={{width:"48px", height:"56px", textAlign:"center", fontSize:"1.25rem", fontWeight:"700", backgroundColor:"#ffffff", color:"#000000", border:"2px solid #d1d5db", borderRadius:"12px", outline:"none", caretColor:"#000000"}}
                   />
                 ))}
               </div>
