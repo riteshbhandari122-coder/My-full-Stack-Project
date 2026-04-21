@@ -3,6 +3,8 @@
   "short_name": "ShopMart",
   "name": "ShopMart - Shop Smart, Shop Big!",
   "description": "Nepal's best online shopping destination. Shop electronics, fashion, home & more.",
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     {
       "src": "logo192.png",
@@ -31,14 +33,15 @@
   ],
   "start_url": "/",
   "scope": "/",
-  "id": "com.shopmart.nepal",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
   "theme_color": "#0f1b2d",
   "background_color": "#0f1b2d",
   "categories": ["shopping", "ecommerce"],
-  "lang": "en",
   "prefer_related_applications": false,
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "related_applications": [],
   "screenshots": [
     {
       "src": "logo512.png",
