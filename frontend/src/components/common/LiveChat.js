@@ -190,14 +190,15 @@ const LiveChat = () => {
 
             {/* Input */}
             <div className="p-3 border-t border-gray-100 flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && sendMessage()}
-                placeholder="Type a message..."
-                className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary-400"
-              />
+<input
+  type="text"
+  value={input}
+  onChange={e => setInput(e.target.value)}
+  onKeyPress={e => e.key === 'Enter' && sendMessage()}
+  placeholder="Type a message..."
+  /* Added text-black below to make typing visible */
+  className="flex-1 text-black text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary-400"
+/>
               <button
                 onClick={sendMessage}
                 className="w-9 h-9 bg-primary-500 text-white rounded-xl flex items-center justify-center hover:bg-primary-600 transition-colors flex-shrink-0"
