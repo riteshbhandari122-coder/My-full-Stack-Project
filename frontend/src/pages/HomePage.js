@@ -160,41 +160,9 @@ const HomePage = () => {
               </div>
             </motion.div>
 
-            {/* Right — floating product cards */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative hidden md:block"
-              style={{ height: '380px' }}
-            >
-              {/* Main large card */}
-              {featured[0] && (
-                <motion.div
-                  animate={{ y: [0, -12, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                  style={{
-                    position: 'absolute', left: '50%', top: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    background: 'rgba(255,255,255,0.08)',
-                    backdropFilter: 'blur(16px)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '20px', padding: '16px',
-                    width: '180px', zIndex: 3,
-                    boxShadow: '0 16px 48px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  <img src={featured[0].images?.[0]?.url || 'https://picsum.photos/150/150'} alt={featured[0].name}
-                    style={{ width: '100%', height: '120px', objectFit: 'contain', borderRadius: '12px' }} />
-                  <p style={{ color: 'white', fontSize: '0.8rem', fontWeight: 600, marginTop: '8px' }} className="line-clamp-2">
-                    {featured[0].name}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-                    <p style={{ color: '#f59e0b', fontSize: '0.9rem', fontWeight: 800 }}>NPR {featured[0].price?.toLocaleString()}</p>
-                    <span style={{ background: '#ef4444', color: 'white', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '6px' }}>HOT</span>
-                  </div>
-                </motion.div>
-              )}
+            
+         
+              
 
               {/* Small cards floating around */}
               {featured[1] && <FloatingCard product={featured[1]} delay={0.4} x="0%" y="10%" />}
