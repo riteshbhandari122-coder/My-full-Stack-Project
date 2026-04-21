@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiArrowRight, FiTruck, FiShield, FiRotateCcw, FiHeadphones, FiZap, FiStar, FiPackage, FiClock } from 'react-icons/fi';
@@ -47,37 +47,7 @@ const CountdownTimer = () => {
   );
 };
 
-// ─── Floating Product Card ────────────────────────────────────────────────────
-const FloatingCard = ({ product, delay, x, y }) => {
-  if (!product) return null;
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
-      transition={{ delay, duration: 0.5, y: { duration: 3, repeat: Infinity, ease: 'easeInOut', delay } }}
-      style={{
-        position: 'absolute', left: x, top: y, zIndex: 2,
-        background: 'rgba(255,255,255,0.06)',
-        backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.12)',
-        borderRadius: '16px', padding: '12px',
-        width: '140px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-      }}
-    >
-      <img
-        src={product.images?.[0]?.url || 'https://picsum.photos/100/100'}
-        alt={product.name}
-        style={{ width: '100%', height: '80px', objectFit: 'contain', borderRadius: '8px' }}
-      />
-      <p style={{ color: 'white', fontSize: '0.7rem', fontWeight: 600, marginTop: '6px', lineHeight: 1.3 }} className="line-clamp-1">
-        {product.name}
-      </p>
-      <p style={{ color: '#f59e0b', fontSize: '0.75rem', fontWeight: 800, marginTop: '2px' }}>
-        NPR {product.price?.toLocaleString()}
-      </p>
-    </motion.div>
-  );
-};
+
 
 const HomePage = () => {
   const [featured, setFeatured] = useState([]);
@@ -121,23 +91,21 @@ const HomePage = () => {
         <div className="hero-blob hero-blob-3" />
 
         <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 relative z-10">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-
-            {/* Left — text */}
-            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
+          <div className="max-w-3xl mx-auto text-center">
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <span className="hero-pill mb-6 inline-flex">
                 <FiZap size={14} className="inline mr-1" />
                 Up to 60% OFF — Limited Time
               </span>
-              <h1 className="hero-title mt-4 mb-4">
+              <h1 className="hero-title mt-6 mb-4">
                 Shop <span className="hero-highlight">Smart</span>,{' '}
                 Shop <span className="hero-highlight">Big!</span>
               </h1>
-              <p className="hero-subtitle mb-8">
+              <p className="hero-subtitle mb-10">
                 Discover thousands of products across 100+ categories.<br />
                 Best prices, fast delivery, and hassle-free returns.
               </p>
-              <div className="flex gap-4 flex-wrap mb-10">
+              <div className="flex gap-4 justify-center flex-wrap mb-14">
                 <Link to="/products" className="btn-primary text-base px-8 py-3 flex items-center gap-2">
                   Shop Now <FiArrowRight />
                 </Link>
@@ -145,7 +113,7 @@ const HomePage = () => {
                   View Deals <FiZap />
                 </Link>
               </div>
-              <div className="hero-stats" style={{ justifyContent: 'flex-start' }}>
+              <div className="hero-stats">
                 {[
                   { num: '20K+', label: 'Products', icon: FiPackage },
                   { num: '500+', label: 'Brands', icon: FiStar },
@@ -158,25 +126,6 @@ const HomePage = () => {
                   </div>
                 ))}
               </div>
-            </motion.div>
-
-            
-         
-              
-
-              {/* Small cards floating around */}
-              {featured[1] && <FloatingCard product={featured[1]} delay={0.4} x="0%" y="10%" />}
-              {featured[2] && <FloatingCard product={featured[2]} delay={0.6} x="65%" y="5%" />}
-              {featured[3] && <FloatingCard product={featured[3]} delay={0.8} x="60%" y="62%" />}
-
-              {/* Decorative glow */}
-              <div style={{
-                position: 'absolute', top: '50%', left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '300px', height: '300px', borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(245,158,11,0.15), transparent 70%)',
-                pointerEvents: 'none', zIndex: 1,
-              }} />
             </motion.div>
           </div>
         </div>
