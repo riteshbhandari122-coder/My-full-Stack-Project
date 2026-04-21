@@ -224,6 +224,8 @@ const ProductsPage = () => {
 
   const sidebarProps = { filters, categories, brands, updateFilter, clearFilters, localPrice, setLocalPrice };
 
+  // ... (keep all your existing code above the return statement exactly as it is)
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 mt-20">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -247,7 +249,13 @@ const ProductsPage = () => {
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
             {sortOptions.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
+              <option 
+                key={value} 
+                value={value} 
+                className="text-black" // This ensures the dropdown text is black
+              >
+                {label}
+              </option>
             ))}
           </select>
         </div>
