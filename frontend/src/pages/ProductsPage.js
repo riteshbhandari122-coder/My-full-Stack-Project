@@ -54,14 +54,14 @@ const FilterSidebar = ({ filters, categories, brands, updateFilter, clearFilters
           placeholder="Min"
           value={localPrice.minPrice}
           onChange={(e) => setLocalPrice(p => ({ ...p, minPrice: e.target.value }))}
-          className="w-1/2 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+          style={{ color: '#111827', backgroundColor: '#ffffff', width: '48%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem', outline: 'none' }}
         />
         <input
           type="number"
           placeholder="Max"
           value={localPrice.maxPrice}
           onChange={(e) => setLocalPrice(p => ({ ...p, maxPrice: e.target.value }))}
-          className="w-1/2 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+          style={{ color: '#111827', backgroundColor: '#ffffff', width: '48%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem', outline: 'none' }}
         />
       </div>
     </FilterSection>
