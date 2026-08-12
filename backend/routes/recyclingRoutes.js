@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// 🤖 AI Vision Upcycle & Recycling Analysis
+// 🤖 High-Speed AI Vision Upcycle & Recycling Analysis
 router.post('/analyze', async (req, res) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -26,7 +26,7 @@ router.post('/analyze', async (req, res) => {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.6-flash', // Updated to active model endpoint
+      model: 'gemini-3.5-flash', // High-speed flash model optimized for fast multimodal performance
       generationConfig: { responseMimeType: 'application/json' },
     });
 
