@@ -26,7 +26,7 @@ router.post('/analyze', async (req, res) => {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash', // ✅ Updated to active standard model endpoint
+      model: 'gemini-2.0-flash', // ✅ Updated to active standard model endpoint
       generationConfig: { responseMimeType: 'application/json' },
     });
 
