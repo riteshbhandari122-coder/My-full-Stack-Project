@@ -9,13 +9,19 @@ router.post('/analyze', async (req, res) => {
 
     if (!apiKey) {
       console.error('❌ GEMINI_API_KEY is missing from environment variables.');
-      return res.status(500).json({ error: 'Server misconfiguration: GEMINI_API_KEY missing.' });
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Server misconfiguration: GEMINI_API_KEY missing.' 
+      });
     }
 
     const { imageBase64, mimeType } = req.body;
 
     if (!imageBase64) {
-      return res.status(400).json({ error: 'No image provided.' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No image provided.' 
+      });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -83,8 +89,9 @@ router.post('/analyze', async (req, res) => {
   } catch (error) {
     console.error('❌ Gemini Vision AI Error:', error?.message || error);
     return res.status(500).json({
-      error: 'Failed to analyze image.',
-      details: error?.message || 'Unknown server error'
+      success: false,
+      message: 'Failed to analyze image with AI.',
+      error: error?.message || 'Unknown server error'
     });
   }
 });
