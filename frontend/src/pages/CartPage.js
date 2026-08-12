@@ -86,7 +86,7 @@ const CartPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-black text-gray-900 mb-6">Shopping Cart ({cart.items.length} items)[cite: 5]</h1>
+      <h1 className="text-2xl font-black text-gray-900 mb-6">Shopping Cart ({cart.items.length} items)[cite: 3, 5]</h1>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
@@ -151,9 +151,23 @@ const CartPage = () => {
               <div className="flex justify-between text-sm"><span className="text-gray-600">Tax (13%)</span><span>{formatPrice(tax)}</span></div>
               <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span>{formatPrice(total)}</span></div>
             </div>
-            <button onClick={() => navigate('/checkout')} className="w-full btn-primary py-3 text-base flex items-center justify-center gap-2">
+
+            {/* ✅ Safe Navigation Handler */}
+            <button 
+              type="button"
+              onClick={() => {
+                try {
+                  navigate('/checkout');
+                } catch (err) {
+                  console.error('Checkout navigation error:', err);
+                  window.location.href = '/checkout';
+                }
+              }} 
+              className="w-full btn-primary py-3 text-base flex items-center justify-center gap-2 cursor-pointer"
+            >
               Proceed to Checkout
             </button>
+
             <Link to="/products" className="block text-center text-sm text-emerald-600 mt-3 hover:underline">Continue Shopping</Link>
           </div>
         </div>
