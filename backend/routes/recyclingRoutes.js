@@ -11,7 +11,7 @@ router.post('/analyze', async (req, res) => {
       console.error('❌ GEMINI_API_KEY is missing from environment variables.');
       return res.status(500).json({ 
         success: false, 
-        message: 'Server misconfiguration: GEMINI_API_KEY missing.' 
+        message: 'Server misconfiguration: GEMINI_API_KEY missing on Render.' 
       });
     }
 
@@ -25,19 +25,10 @@ router.post('/analyze', async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-
-    let model;
-    try {
-      model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        generationConfig: { responseMimeType: 'application/json' },
-      });
-    } catch (e) {
-      model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
-        generationConfig: { responseMimeType: 'application/json' },
-      });
-    }
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-3.6-flash', // Updated to active model endpoint
+      generationConfig: { responseMimeType: 'application/json' },
+    });
 
     const prompt = `
       You are an expert waste sorting and eco-upcycling assistant.
@@ -90,8 +81,7 @@ router.post('/analyze', async (req, res) => {
     console.error('❌ Gemini Vision AI Error:', error?.message || error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to analyze image with AI.',
-      error: error?.message || 'Unknown server error'
+      message: `Gemini Error: ${error?.message || 'Unknown server error'}`,
     });
   }
 });
