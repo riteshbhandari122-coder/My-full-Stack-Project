@@ -26,7 +26,7 @@ router.post('/analyze', async (req, res) => {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.5-flash', // High-speed flash model optimized for fast multimodal performance
+      model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     });
 
@@ -76,7 +76,28 @@ router.post('/analyze', async (req, res) => {
     const result = await model.generateContent([prompt, imagePart]);
     const responseText = result.response.text();
 
-    return res.json(JSON.parse(responseText));
+    // 🛠️ Robust JSON Cleaning & Safe Parsing Fallback
+    let cleanedJsonText = responseText.trim();
+    if (cleanedJsonText.startsWith('```json')) {
+      cleanedJsonText = cleanedJsonText.replace(/^```json/, '').replace(/```$/, '').trim();
+    } else if (cleanedJsonText.startsWith('```')) {
+      cleanedJsonText = cleanedJsonText.replace(/^```/, '').replace(/```$/, '').trim();
+    }
+
+    let parsedData;
+    try {
+      parsedData = JSON.parse(cleanedJsonText);
+    } catch (parseError) {
+      console.warn('⚠️ Standard JSON parse failed, attempting minor structural cleanup...');
+      // Clean up common trailing commas or quote issues if present
+      const fixedText = cleanedJsonText
+        .replace(/,\s*([\]}])/g, '$1') // remove trailing commas
+        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":'); // ensure double quotes on keys
+      
+      parsedData = JSON.parse(fixedText);
+    }
+
+    return res.json(parsedData);
   } catch (error) {
     console.error('❌ Gemini Vision AI Error:', error?.message || error);
     return res.status(500).json({
