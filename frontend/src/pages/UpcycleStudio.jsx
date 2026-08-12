@@ -78,18 +78,18 @@ const UpcycleStudio = () => {
   };
 
   return (
-    <div style={{ minHeight: '75vh', padding: '40px 16px' }} className="max-w-4xl mx-auto flex flex-col justify-between">
-      <div className="bg-white rounded-2xl shadow-md border border-emerald-100 p-6 md:p-10 mb-8">
-        <div className="text-center max-w-xl mx-auto mb-8">
+    <div style={{ minHeight: 'calc(100vh - 180px)', padding: '40px 16px' }} className="max-w-5xl mx-auto flex flex-col justify-between">
+      <div className="bg-white rounded-2xl shadow-lg border border-emerald-100 p-6 md:p-10 mb-8">
+        <div className="text-center max-w-2xl mx-auto mb-8">
           <h1 className="text-2xl md:text-3xl font-extrabold text-gray-800 mb-2 flex items-center justify-center gap-2">
-            <span>♻️</span> AI Upcycle Studio
+            <span>♻️</span> Know How to Recycle & Upcycle
           </h1>
           <p className="text-gray-600 text-sm md:text-base">
-            Take a live photo or upload an image of waste items to receive instant zero-cost reuse and recycling ideas!
+            Take a photo with your camera or upload an image to receive instant zero-cost reuse ideas!
           </p>
         </div>
 
-        {/* Camera / Upload buttons */}
+        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
           <button
             onClick={startCamera}
@@ -103,7 +103,7 @@ const UpcycleStudio = () => {
           </label>
         </div>
 
-        {/* Live Video Camera Stream */}
+        {/* Camera Modal View */}
         {showCamera && (
           <div className="mb-8 p-4 bg-gray-900 rounded-2xl flex flex-col items-center">
             <video ref={videoRef} autoPlay playsInline className="w-full max-w-md rounded-xl mb-4 bg-black" />
@@ -119,11 +119,11 @@ const UpcycleStudio = () => {
           </div>
         )}
 
-        {/* Image Preview */}
+        {/* Selected Image Preview */}
         {image && !showCamera && (
           <div className="flex flex-col items-center bg-gray-50 border border-gray-200 rounded-2xl p-6 mb-8">
             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">Selected Item Preview:</h3>
-            <img src={image} alt="Selected waste item" className="max-h-60 rounded-xl object-contain shadow-sm mb-6" />
+            <img src={image} alt="Selected item" className="max-h-64 rounded-xl object-contain shadow-sm mb-6" />
             <button
               onClick={analyzeImage}
               disabled={loading}
@@ -141,7 +141,7 @@ const UpcycleStudio = () => {
           </div>
         )}
 
-        {/* AI Output */}
+        {/* Results display */}
         {result && (
           <div className="mt-8 border-t border-gray-100 pt-8">
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 mb-8">
@@ -149,7 +149,7 @@ const UpcycleStudio = () => {
                 Item: {result.identifiedItem || 'Identified Item'}
               </h2>
               <p className="text-emerald-800 text-sm">
-                <strong>Material:</strong> {result.materialType || 'Unknown Material'} | {' '}
+                <strong>Material:</strong> {result.materialType || 'Plastic / Packaging'} | {' '}
                 <strong>Recyclable:</strong> {result.isRecyclable ? 'Yes ✅' : 'No ❌'}
               </p>
             </div>
