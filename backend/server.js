@@ -1,0 +1,158 @@
+const express = require('express');
+const http = require('http');
+const socketio = require('socket.io');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
+const dotenv = require('dotenv');
+const path = require('path');
+const passport = require('passport');
+const session = require('express-session');
+
+dotenv.config();
+
+// Passport Config
+require('./config/passport');
+
+const app = express();
+
+// ✅ Tell Express to trust the Render proxy
+app.set('trust proxy', 1);
+
+const server = http.createServer(app);
+const io = socketio(server, {
+  cors: {
+    origin: [
+      'http://localhost:3000',
+      'https://my-full-stack-project-one.vercel.app'
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
+// Security Middleware
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+// ✅ Fixed CORS for mobile and web
+app.use(cors({
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://my-full-stack-project-one.vercel.app'
+    ];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// ✅ Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests from this IP, please try again later.',
+});
+app.use('/api/', limiter);
+
+// Body Parsing (10mb limit for Base64 Gemini camera image uploads)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// ✅ Session Middleware
+app.use(session({
+  secret: process.env.JWT_SECRET || 'supersecretkey',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000
+  }
+}));
+
+// Passport Middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Logging
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Static Files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ─── API Routes ───────────────────────────────────────────────────────────────
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/auth', require('./routes/auth.otp.routes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/reviews', require('./routes/reviewRoutes'));
+app.use('/api/coupons', require('./routes/couponRoutes'));
+app.use('/api/wishlist', require('./routes/wishlistRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/payment', require('./routes/paymentRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/recycling', require('./routes/recyclingRoutes')); // 🤖 Gemini Vision AI Upcycle Endpoint
+
+// Health Check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'EcoMart API is running', timestamp: new Date() });
+});
+
+// WebSocket Connection
+io.on('connection', (socket) => {
+  console.log(`Client connected: ${socket.id}`);
+
+  socket.on('joinRoom', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined room`);
+  });
+
+  socket.on('trackOrder', (orderId) => {
+    socket.join(`order_${orderId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`Client disconnected: ${socket.id}`);
+  });
+});
+
+// Error Handler Middleware
+app.use(require('./middleware/errorMiddleware'));
+
+// Connect DB & Start Server
+const PORT = process.env.PORT || 5000;
+mongoose
+  .connect(process.env.MONGO_URI || 'mongodb://localhost:27017/ecomart')
+  .then(() => {
+    console.log('✅ MongoDB connected');
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection failed:', err.message);
+    process.exit(1);
+  });
+
+module.exports = { app, io };

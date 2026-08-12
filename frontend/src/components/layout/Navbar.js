@@ -1,0 +1,598 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FiSearch, FiShoppingCart, FiHeart, FiBell, FiUser,
+  FiMenu, FiLogOut, FiSettings, FiPackage, FiChevronDown,
+  FiGrid, FiSun, FiMoon, FiTrash2, FiGift, FiCamera
+} from 'react-icons/fi';
+import { useAuthStore } from '../../store/authStore';
+import { useCartStore } from '../../store/cartStore';
+import { useWishlistStore } from '../../store/wishlistStore';
+import { useTheme } from '../../ThemeContext';
+import api from '../../utils/api';
+import { debounce } from '../../utils/helpers';
+
+const logoImg = "/assets/ecomart-logo.png";
+
+const Navbar = () => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
+  const { getCartCount, fetchCart } = useCartStore();
+  const { wishlist, fetchWishlist } = useWishlistStore();
+  const { darkMode, toggleDarkMode } = useTheme();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const searchRef = useRef(null);
+  const userMenuRef = useRef(null);
+  const notificationRef = useRef(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchCart();
+      fetchWishlist();
+      fetchNotifications();
+    }
+    fetchCategories();
+  }, [user]);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false);
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) setShowNotifications(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const { data } = await api.get('/categories?parent=root');
+      setCategories(data.categories?.slice(0, 8) || []);
+    } catch {}
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const { data } = await api.get('/notifications?limit=5');
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
+    } catch {}
+  };
+
+  const handleNotificationOpen = async () => {
+    if (!showNotifications && unreadCount > 0) {
+      try {
+        await api.put('/notifications/read-all');
+        setUnreadCount(0);
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      } catch {}
+    }
+    setShowNotifications(!showNotifications);
+  };
+
+  const handleDeleteNotification = async (e, id) => {
+    e.stopPropagation();
+    e.preventDefault();
+    try {
+      await api.delete(`/notifications/${id}`);
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+    } catch {}
+  };
+
+  const fetchSuggestions = debounce(async (query) => {
+    if (query.length < 2) { setSuggestions([]); return; }
+    try {
+      const { data } = await api.get(`/products/search/suggestions?q=${query}`);
+      setSuggestions(data.suggestions || []);
+      setShowSuggestions(true);
+    } catch {}
+  }, 300);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+    setShowUserMenu(false);
+  };
+
+  const cartCount = getCartCount();
+
+  const dropdownVariants = {
+    hidden:  { opacity: 0, y: 8, scale: 0.97 },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] } },
+    exit:    { opacity: 0, y: 6, scale: 0.97, transition: { duration: 0.14 } },
+  };
+
+  return (
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-shadow duration-300 ${isScrolled ? 'shadow-navbar' : ''}`}>
+
+      {/* Top Promo Bar */}
+      <div className="navbar-top-bar py-1 px-4 text-center hidden md:block">
+        <p className="text-xs text-white/70 tracking-wide">
+          🎉 Free shipping on orders over{' '}
+          <span className="text-white font-medium">NPR 2,000</span>
+          {'  ·  '}
+          Use code{' '}
+          <span className="text-yellow-400 font-bold tracking-widest bg-yellow-400/10 px-1.5 py-0.5 rounded">
+            SAVE10
+          </span>{' '}
+          for 10% off
+        </p>
+      </div>
+
+      {/* Main Navbar */}
+      <div className="navbar-main px-4 py-1.5">
+        <div className="max-w-7xl mx-auto flex items-center gap-4">
+
+          {/* Logo */}
+          <Link to="/" className="flex-shrink-0 flex items-center gap-2.5 group" aria-label="EcoMart home">
+            <div className="logo-circle">
+              <img
+                src={logoImg}
+                alt="EcoMart"
+                className="transition-transform duration-300 group-hover:scale-110"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <span className="hidden text-xl">🌱</span>
+            </div>
+            <span
+              className="hidden lg:block text-white font-black text-lg leading-none"
+              style={{ fontFamily: 'Syne, sans-serif', letterSpacing: '-0.03em' }}
+            >
+              Eco<span style={{ color: '#66BB6A' }}>Mart</span>
+            </span>
+          </Link>
+
+          {/* Search Bar */}
+          <div className="flex-1 hidden md:block relative" ref={searchRef}>
+            <form onSubmit={handleSearch} className="flex h-10">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  fetchSuggestions(e.target.value);
+                }}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                placeholder="Search products, brands, categories…"
+                className="nav-search-input"
+              />
+              <button type="submit" className="nav-search-btn">
+                <FiSearch size={18} />
+              </button>
+            </form>
+
+            <AnimatePresence>
+              {showSuggestions && suggestions.length > 0 && (
+                <motion.div
+                  variants={dropdownVariants}
+                  initial="hidden" animate="visible" exit="exit"
+                  className={`absolute top-full left-0 right-0 dropdown-panel z-50 mt-2 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'}`}
+                >
+                  <div className={`px-4 py-2 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Suggestions</span>
+                  </div>
+                  {suggestions.map((s) => (
+                    <button
+                      key={s._id}
+                      onClick={() => {
+                        if (s.isCategory) {
+                          navigate(`/products?search=${encodeURIComponent(s.name)}`);
+                        } else {
+                          navigate(`/products/${s.slug || s._id}`);
+                        }
+                        setShowSuggestions(false);
+                        setSearchQuery('');
+                      }}
+                      className={`flex items-center gap-3 w-full px-4 py-3 text-left transition-colors duration-100 border-b last:border-0 ${
+                        darkMode ? 'hover:bg-gray-800 border-gray-700' : 'hover:bg-amber-50/60 border-gray-50'
+                      }`}
+                    >
+                      {s.isCategory ? (
+                        <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                          <FiGrid size={18} className="text-primary-600" />
+                        </div>
+                      ) : s.image ? (
+                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <img src={s.image} alt={s.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className={`font-medium text-sm truncate ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                          {s.isCategory ? `📂 ${s.name}` : s.name}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {s.isCategory ? 'Browse category' : `${s.brand || ''} · ${s.category || ''}`}
+                        </p>
+                      </div>
+                      <FiSearch size={13} className="ml-auto text-gray-300 flex-shrink-0" />
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-1">
+
+            {/* Mobile search toggle */}
+            <button
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+              className="nav-action-btn md:hidden"
+              aria-label="Search"
+            >
+              <FiSearch size={21} />
+            </button>
+
+            {/* 📷 AI Upcycle Camera Top Shortcut */}
+            <Link to="/know-how-to-recycle" className="nav-action-btn relative" aria-label="AI Camera">
+              <FiCamera size={21} className="text-emerald-400" />
+              <span className="label hidden md:block text-emerald-400 font-semibold">AI Upcycle</span>
+            </Link>
+
+            {/* Desktop Green Rewards Top Shortcut */}
+            <Link to="/rewards" className="nav-action-btn hidden md:flex relative" aria-label="Rewards">
+              <FiGift size={21} className="text-emerald-400" />
+              <span className="label hidden md:block">Rewards</span>
+            </Link>
+
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="nav-action-btn relative"
+              aria-label="Toggle dark mode"
+            >
+              {darkMode ? <FiSun size={21} /> : <FiMoon size={21} />}
+              <span className="label hidden md:block">{darkMode ? 'Light' : 'Dark'}</span>
+            </button>
+
+            {/* Wishlist */}
+            <Link to="/wishlist" className="nav-action-btn relative" aria-label="Wishlist">
+              <FiHeart size={21} />
+              <span className="label hidden md:block">Wishlist</span>
+              {wishlist?.length > 0 && (
+                <span className="nav-badge nav-badge-red">{wishlist.length}</span>
+              )}
+            </Link>
+
+            {/* Notifications */}
+            {user && (
+              <div className="relative" ref={notificationRef}>
+                <button
+                  onClick={handleNotificationOpen}
+                  className="nav-action-btn relative"
+                  aria-label="Notifications"
+                >
+                  <FiBell size={21} />
+                  <span className="label hidden md:block">Alerts</span>
+                  {unreadCount > 0 && (
+                    <span className="nav-badge nav-badge-red">{unreadCount}</span>
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div
+                      variants={dropdownVariants}
+                      initial="hidden" animate="visible" exit="exit"
+                      className={`
+                        fixed md:absolute
+                        left-2 right-2 md:left-auto md:right-0
+                        top-16 md:top-full
+                        mt-0 md:mt-3
+                        w-auto md:w-80
+                        dropdown-panel z-50 py-2
+                        max-h-[70vh] overflow-y-auto
+                        ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'}
+                      `}
+                    >
+                      <div className={`px-4 py-2 border-b flex items-center justify-between ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                        <span className={`text-sm font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                          Notifications
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {unreadCount > 0 && (
+                            <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                              {unreadCount} new
+                            </span>
+                          )}
+                          <button
+                            onClick={() => setShowNotifications(false)}
+                            className="md:hidden text-gray-400 hover:text-gray-600 text-lg font-bold"
+                          >✕</button>
+                        </div>
+                      </div>
+                      {notifications.length === 0 ? (
+                        <p className="text-center text-sm text-gray-400 py-6">No notifications</p>
+                      ) : (
+                        notifications.map((n) => (
+                          <div
+                            key={n._id}
+                            className={`flex items-start gap-2 px-4 py-3 border-b last:border-0 group ${
+                              !n.isRead
+                                ? darkMode ? 'bg-amber-900/20' : 'bg-amber-50/40'
+                                : ''
+                            } ${darkMode ? 'border-gray-700' : 'border-gray-50'}`}
+                          >
+                            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { if (n.link) { navigate(n.link); setShowNotifications(false); } }}>
+                              <p className={`text-sm font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>{n.title}</p>
+                              <p className="text-xs text-gray-400 mt-1">{n.message}</p>
+                            </div>
+                            <button
+                              onClick={(e) => handleDeleteNotification(e, n._id)}
+                              className={`flex-shrink-0 p-1 rounded-lg transition-all opacity-0 group-hover:opacity-100 ${
+                                darkMode ? 'hover:bg-red-900/30 text-gray-500 hover:text-red-400' : 'hover:bg-red-50 text-gray-400 hover:text-red-500'
+                              }`}
+                              aria-label="Delete notification"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Cart */}
+            <Link to="/cart" className="nav-action-btn relative" aria-label="Cart">
+              <FiShoppingCart size={21} />
+              <span className="label hidden md:block">Cart</span>
+              {cartCount > 0 && (
+                <span className="nav-badge nav-badge-yellow">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* User Menu */}
+            {user ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-all duration-150 hover:bg-white/10"
+                  style={{ color: 'rgba(255,255,255,0.88)' }}
+                >
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/60 bg-gray-200">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="w-full h-full bg-gradient-to-br from-amber-400 to-amber-500 items-center justify-center text-gray-900 font-bold text-sm"
+                      style={{ display: user.avatar ? 'none' : 'flex' }}
+                    >
+                      {user.name?.charAt(0).toUpperCase()}
+                    </div>
+                  </div>
+                  <div className="hidden md:block text-left leading-tight">
+                    <p className="text-[10px] text-white/45 font-medium">Hello,</p>
+                    <p className="text-sm font-semibold" style={{ fontFamily: 'Syne, sans-serif' }}>
+                      {user.name?.split(' ')[0]}
+                    </p>
+                  </div>
+                  <FiChevronDown
+                    size={13}
+                    className={`hidden md:block opacity-60 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div
+                      variants={dropdownVariants}
+                      initial="hidden" animate="visible" exit="exit"
+                      className={`absolute right-0 top-full mt-3 w-56 dropdown-panel z-50 py-1.5 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'}`}
+                    >
+                      <div className={`px-4 py-3 border-b mb-1 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                        <p className="text-xs text-gray-400">Signed in as</p>
+                        <p className={`text-sm font-semibold truncate mt-0.5 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                          {user.name}
+                        </p>
+                      </div>
+                      {[
+                        { to: '/profile',  icon: <FiUser size={15} />,    label: 'My Profile' },
+                        { to: '/orders',   icon: <FiPackage size={15} />, label: 'My Orders' },
+                        { to: '/wishlist', icon: <FiHeart size={15} />,   label: 'Wishlist' },
+                      ].map(({ to, icon, label }) => (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={() => setShowUserMenu(false)}
+                          className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-100 text-sm ${
+                            darkMode
+                              ? 'text-gray-300 hover:bg-gray-800 hover:text-gray-100'
+                              : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          }`}
+                        >
+                          <span className="text-gray-400">{icon}</span>
+                          {label}
+                        </Link>
+                      ))}
+                      {user.role === 'admin' && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-amber-600 hover:bg-amber-50 transition-colors duration-100 text-sm font-semibold"
+                        >
+                          <FiSettings size={15} />
+                          Admin Panel
+                        </Link>
+                      )}
+                      <div className={`my-1 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`} />
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 px-4 py-2.5 text-red-500 hover:bg-red-50 hover:text-red-600 w-full transition-colors duration-100 text-sm"
+                      >
+                        <FiLogOut size={15} />
+                        Sign Out
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link to="/login" className="nav-action-btn hidden md:flex" aria-label="Sign in">
+                  <FiUser size={21} />
+                  <span className="label">Sign In</span>
+                </Link>
+                <Link to="/register" className="hidden md:inline-flex btn-primary text-sm !py-1.5 !px-4">
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Search */}
+        <AnimatePresence>
+          {showMobileSearch && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1, transition: { duration: 0.2 } }}
+              exit={{ height: 0, opacity: 0, transition: { duration: 0.15 } }}
+              className="mt-3 md:hidden overflow-hidden"
+            >
+              <form onSubmit={handleSearch} className="flex">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    fetchSuggestions(e.target.value);
+                  }}
+                  placeholder="Search products, categories…"
+                  className="nav-search-input"
+                  autoFocus
+                />
+                <button type="submit" className="nav-search-btn">
+                  <FiSearch size={17} />
+                </button>
+              </form>
+
+              {showSuggestions && suggestions.length > 0 && (
+                <div className={`rounded-xl mt-2 shadow-lg border overflow-hidden ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'}`}>
+                  {suggestions.map((s) => (
+                    <button
+                      key={s._id}
+                      onClick={() => {
+                        if (s.isCategory) {
+                          navigate(`/products?search=${encodeURIComponent(s.name)}`);
+                        } else {
+                          navigate(`/products/${s.slug || s._id}`);
+                        }
+                        setShowSuggestions(false);
+                        setShowMobileSearch(false);
+                        setSearchQuery('');
+                      }}
+                      className={`flex items-center gap-3 w-full px-4 py-3 text-left border-b last:border-0 ${
+                        darkMode ? 'hover:bg-gray-800 border-gray-700' : 'hover:bg-gray-50 border-gray-50'
+                      }`}
+                    >
+                      {s.isCategory ? (
+                        <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                          <FiGrid size={14} className="text-primary-600" />
+                        </div>
+                      ) : s.image ? (
+                        <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <img src={s.image} alt={s.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className={`font-medium text-sm truncate ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                          {s.isCategory ? `📂 ${s.name}` : s.name}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {s.isCategory ? 'Browse category' : s.brand}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Categories Bar */}
+      <div className="navbar-categories hidden md:block">
+        <div className="max-w-7xl mx-auto px-4 flex items-center gap-0.5 overflow-x-auto scrollbar-hide py-1">
+          <Link to="/products" className="cat-link flex items-center gap-1.5 font-semibold !text-white/80 hover:!text-white">
+            <FiMenu size={13} />
+            All
+          </Link>
+          <span className="w-px h-4 bg-white/10 mx-1" />
+          {categories.map((cat) => (
+            <Link key={cat._id} to={`/category/${cat.slug}`} className="cat-link">
+              {cat.icon && <span className="mr-1">{cat.icon}</span>}
+              {cat.name}
+            </Link>
+          ))}
+          <span className="w-px h-4 bg-white/10 mx-1" />
+          <Link to="/products?sort=popular" className="cat-link !text-amber-400 hover:!text-amber-300 font-semibold hover:bg-amber-400/10">
+            🔥 Hot Deals
+          </Link>
+          <Link to="/products?sort=newest" className="cat-link !text-emerald-400 hover:!text-emerald-300 font-semibold hover:bg-emerald-400/10">
+            ✨ New Arrivals
+          </Link>
+          <Link to="/rewards" className="cat-link font-bold hover:bg-yellow-400/10 ml-1" style={{ color: '#66BB6A', background: 'rgba(46,125,50,0.1)', border: '1px solid rgba(46,125,50,0.25)', borderRadius: '8px', padding: '4px 12px', animation: 'pulse-ring 2s infinite' }}>
+            🌿 Green Rewards
+          </Link>
+          <Link to="/know-how-to-recycle" className="cat-link font-bold hover:bg-yellow-400/10" style={{ color: '#66BB6A', background: 'rgba(46,125,50,0.1)', border: '1px solid rgba(46,125,50,0.25)', borderRadius: '8px', padding: '4px 12px' }}>
+            🤖 AI Upcycle
+          </Link>
+          <Link to="/contact" className="cat-link" style={{ color: 'rgba(255,255,255,0.65)' }}>
+            📍 Contact
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
