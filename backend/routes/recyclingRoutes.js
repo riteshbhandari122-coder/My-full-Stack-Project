@@ -26,7 +26,7 @@ router.post('/analyze', async (req, res) => {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash', // ✅ Updated to active standard model endpoint
       generationConfig: { responseMimeType: 'application/json' },
     });
 
@@ -89,10 +89,9 @@ router.post('/analyze', async (req, res) => {
       parsedData = JSON.parse(cleanedJsonText);
     } catch (parseError) {
       console.warn('⚠️ Standard JSON parse failed, attempting minor structural cleanup...');
-      // Clean up common trailing commas or quote issues if present
       const fixedText = cleanedJsonText
-        .replace(/,\s*([\]}])/g, '$1') // remove trailing commas
-        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":'); // ensure double quotes on keys
+        .replace(/,\s*([\]}])/g, '$1')
+        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
       
       parsedData = JSON.parse(fixedText);
     }

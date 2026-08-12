@@ -47,7 +47,6 @@ const CartPage = () => {
     if (user) fetchCart();
   }, [user]);
 
-  // ✅ Auto-fill and apply redeemed reward coupon from local storage
   useEffect(() => {
     const savedCoupon = localStorage.getItem('applied_eco_coupon');
     if (savedCoupon && user) {
@@ -72,7 +71,6 @@ const CartPage = () => {
 
   const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // ✅ Real Discount Calculation Logic (Percentage vs Fixed amounts)
   let discount = cart.discountAmount || 0;
   if (cart.coupon?.type === 'percent') {
     discount = (subtotal * cart.coupon.value) / 100;
@@ -152,17 +150,10 @@ const CartPage = () => {
               <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span>{formatPrice(total)}</span></div>
             </div>
 
-            {/* ✅ Safe Navigation Handler */}
+            {/* ✅ Direct Route Navigation to Checkout */}
             <button 
               type="button"
-              onClick={() => {
-                try {
-                  navigate('/checkout');
-                } catch (err) {
-                  console.error('Checkout navigation error:', err);
-                  window.location.href = '/checkout';
-                }
-              }} 
+              onClick={() => navigate('/checkout')} 
               className="w-full btn-primary py-3 text-base flex items-center justify-center gap-2 cursor-pointer"
             >
               Proceed to Checkout
