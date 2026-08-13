@@ -34,22 +34,23 @@ const createOrder = asyncHandler(async (req, res) => {
       throw new Error(`Insufficient stock for "${product.name}"`);
     }
 
-  // ✅ Find color-specific image
-const colorImage = item.color
-  ? product.images?.find(img =>
-      img.color?.toLowerCase() === item.color?.toLowerCase()
-    )?.url
-  : null;
+    // Find color-specific image
+    const colorImage = item.color
+      ? product.images?.find(img =>
+          img.color?.toLowerCase() === item.color?.toLowerCase()
+        )?.url
+      : null;
 
-orderItems.push({
-  product: product._id,
-  name: product.name,
-  image: colorImage || product.images[0]?.url || '',
-  price: item.price,
-  quantity: item.quantity,
-  color: item.color || '',
-  size: item.size || '',
-});
+    // ✅ Ensure product name is saved explicitly in the database item object
+    orderItems.push({
+      product: product._id,
+      name: product.name,
+      image: colorImage || product.images[0]?.url || '',
+      price: item.price,
+      quantity: item.quantity,
+      color: item.color || '',
+      size: item.size || '',
+    });
 
     itemsPrice += item.price * item.quantity;
   }
@@ -98,24 +99,21 @@ orderItems.push({
     ],
   });
 
-  // ✅ Send response IMMEDIATELY - don't wait for email/notifications
+  // Send response IMMEDIATELY
   res.status(201).json({ success: true, order });
 
-  // ✅ Do everything else AFTER response (non-blocking)
+  // Post-response background tasks
   try {
-    // Update product stock
     for (const item of orderItems) {
       await Product.findByIdAndUpdate(item.product, {
         $inc: { stock: -item.quantity, sold: item.quantity },
       });
     }
 
-    // Add to user order history
     await User.findByIdAndUpdate(req.user._id, {
       $push: { orderHistory: order._id },
     });
 
-    // Clear cart only for COD (online payments clear cart after verification)
     if (paymentMethod === 'cod') {
       cart.items = [];
       cart.couponCode = '';
@@ -123,7 +121,6 @@ orderItems.push({
       await cart.save();
     }
 
-    // Send notification
     await Notification.create({
       user: req.user._id,
       title: 'Order Placed!',
@@ -132,7 +129,6 @@ orderItems.push({
       link: `/orders/${order._id}`,
     });
 
-    // Emit socket notification
     const io = req.app.get('io');
     if (io) {
       io.to(String(req.user._id)).emit('orderUpdate', {
@@ -142,37 +138,29 @@ orderItems.push({
       });
     }
 
-    // 🌱 GREEN POINTS: Track eco-friendly purchases & update BUY_ECO challenge
     try {
-      // Calculate total quantity of eco-friendly items bought
       const ecoCount = cart.items.reduce(
         (acc, item) => (item.product?.isEcoFriendly ? acc + item.quantity : acc),
         0
       );
 
       if (ecoCount > 0) {
-        // Find the user document
         const user = await User.findById(req.user._id);
         if (user) {
-          // Find the BUY_ECO challenge inside user.monthlyChallenges
           const buyEcoChallenge = user.monthlyChallenges?.find(
             (c) => c.challengeKey === 'BUY_ECO'
           );
 
           if (buyEcoChallenge && !buyEcoChallenge.isCompleted) {
-            // Increment currentCount by ecoCount
             buyEcoChallenge.currentCount = (buyEcoChallenge.currentCount || 0) + ecoCount;
 
-            // If target reached, mark completed and add challenge points
             if (buyEcoChallenge.currentCount >= buyEcoChallenge.targetCount) {
               buyEcoChallenge.isCompleted = true;
               user.greenPoints = (user.greenPoints || 0) + buyEcoChallenge.points;
             }
 
-            // Save the updated user document
             await user.save({ validateBeforeSave: false });
 
-            // Emit Socket.io event so frontend updates in real-time
             if (io) {
               io.to(String(req.user._id)).emit('greenPointsUpdate', {
                 greenPoints: user.greenPoints,
@@ -189,7 +177,7 @@ orderItems.push({
       console.log('Green points tracking failed:', greenErr.message);
     }
 
-    // Send email
+    // Send email with populated order data
     await sendEmail({
       to: req.user.email,
       subject: `Order Confirmed - #${order.orderNumber}`,
@@ -200,9 +188,6 @@ orderItems.push({
   }
 });
 
-// @desc    Get user orders
-// @route   GET /api/orders
-// @access  Private
 const getMyOrders = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
@@ -217,9 +202,6 @@ const getMyOrders = asyncHandler(async (req, res) => {
   res.json({ success: true, total, page, pages: Math.ceil(total / limit), orders });
 });
 
-// @desc    Get single order
-// @route   GET /api/orders/:id
-// @access  Private
 const getOrderById = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate('user', 'name email');
 
@@ -236,9 +218,6 @@ const getOrderById = asyncHandler(async (req, res) => {
   res.json({ success: true, order });
 });
 
-// @desc    Update order to paid
-// @route   PUT /api/orders/:id/pay
-// @access  Private
 const updateOrderToPaid = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) {
@@ -275,9 +254,6 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
   res.json({ success: true, order: updatedOrder });
 });
 
-// @desc    Cancel order
-// @route   PUT /api/orders/:id/cancel
-// @access  Private
 const cancelOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) {
@@ -304,7 +280,6 @@ const cancelOrder = asyncHandler(async (req, res) => {
     timestamp: new Date(),
   });
 
-  // Restore stock
   for (const item of order.items) {
     await Product.findByIdAndUpdate(item.product, {
       $inc: { stock: item.quantity, sold: -item.quantity },
@@ -315,9 +290,6 @@ const cancelOrder = asyncHandler(async (req, res) => {
   res.json({ success: true, order });
 });
 
-// @desc    Update order status (Admin)
-// @route   PUT /api/orders/:id/status
-// @access  Admin
 const updateOrderStatus = asyncHandler(async (req, res) => {
   const { status, message, location } = req.body;
   const order = await Order.findById(req.params.id);
@@ -341,10 +313,8 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 
   await order.save();
 
-  // ✅ Send response first
   res.json({ success: true, order });
 
-  // ✅ Then do notifications non-blocking
   try {
     const io = req.app.get('io');
     if (io) {
@@ -373,9 +343,6 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get all orders (Admin)
-// @route   GET /api/orders/admin/all
-// @access  Admin
 const getAllOrders = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
