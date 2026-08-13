@@ -84,7 +84,7 @@ const CartPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-black text-gray-900 mb-6">Shopping Cart ({cart.items.length} items)[cite: 3, 5]</h1>
+      <h1 className="text-2xl font-black text-gray-900 mb-6">Shopping Cart ({cart.items.length} items)</h1>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">

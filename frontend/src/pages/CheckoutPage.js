@@ -1,284 +1,364 @@
 import React, { useState, useEffect } from 'react';
-import { FiMapPin, FiPhone, FiMail, FiClock, FiSend, FiLayers } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { FiCheck, FiMapPin, FiPlus, FiCreditCard, FiTruck, FiArrowLeft } from 'react-icons/fi';
+import { useCartStore } from '../store/cartStore';
+import { useAuthStore } from '../store/authStore';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import { formatPrice } from '../utils/helpers';
 
-// EcoMart store — Kathmandu New Road area
-const STORE_LAT = 27.70333;
-const STORE_LNG = 85.31239;
+// Auto-build and submit a hidden form — required for eSewa's v2 API, which
+// expects a signed form POST rather than a simple redirect URL.
+function redirectToEsewa(formAction, formData) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = formAction;
+  Object.entries(formData).forEach(([key, value]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
 
-const StoreMap = () => {
-  const [mapType, setMapType] = useState('satellite');
+const STEPS = ['Address', 'Payment', 'Review'];
+
+const CheckoutPage = () => {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { cart, fetchCart, clearCart } = useCartStore();
+
+  const [step, setStep] = useState(0);
+  const [addresses, setAddresses] = useState(user?.addresses || []);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    fullName: '', phone: '', street: '', city: '', state: '', postalCode: '', country: 'Nepal', isDefault: false,
+  });
+  const [savingAddress, setSavingAddress] = useState(false);
+
+  const [paymentMethod, setPaymentMethod] = useState('esewa'); // esewa | khalti | cod
+  const [placingOrder, setPlacingOrder] = useState(false);
 
   useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
+    if (user) fetchCart();
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.addresses?.length) {
+      setAddresses(user.addresses);
+      const def = user.addresses.find(a => a.isDefault) || user.addresses[0];
+      setSelectedAddressId(def._id);
     }
+  }, [user]);
 
-    const initMap = () => {
-      if (!window.L || !document.getElementById('store-map')) return;
-      if (window._storeMap) { window._storeMap.remove(); window._storeMap = null; }
+  if (!user) {
+    navigate('/login');
+    return null;
+  }
+  if (!cart || cart.items?.length === 0) {
+    navigate('/cart');
+    return null;
+  }
 
-      const map = window.L.map('store-map', {
-        scrollWheelZoom: false,
-        zoomControl: true,
-      }).setView([STORE_LAT, STORE_LNG], 18);
-      window._storeMap = map;
-      window._currentLayer = null;
+  const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  let discount = cart.discountAmount || 0;
+  if (cart.coupon?.type === 'percent') discount = (subtotal * cart.coupon.value) / 100;
+  else if (cart.coupon?.type === 'fixed') discount = cart.coupon.value;
+  const shipping = subtotal > 2000 ? 0 : 100;
+  const tax = Math.round((subtotal - discount) * 0.13);
+  const total = Math.max(0, subtotal - discount + shipping + tax);
 
-      // Tile layers
-      const layers = {
-        satellite: window.L.tileLayer(
-          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-          { attribution: 'Tiles © Esri — Source: Esri, USGS, NOAA', maxZoom: 19 }
-        ),
-        street: window.L.tileLayer(
-          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          { attribution: '© OpenStreetMap contributors', maxZoom: 19 }
-        ),
-      };
+  const selectedAddress = addresses.find(a => a._id === selectedAddressId);
 
-      layers.satellite.addTo(map);
-      window._currentLayer = layers.satellite;
-      window._mapLayers = layers;
-
-      // Store marker
-      const storeIcon = window.L.divIcon({
-        html: `
-          <div style="position:relative;">
-            <div style="position:absolute;top:-60px;left:50%;transform:translateX(-50%);background:white;border-radius:10px;padding:6px 10px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.2);border:2px solid #66BB6A;">
-              <span style="font-size:12px;font-weight:700;color:#0d2818;font-family:sans-serif;">🌿 EcoMart</span>
-            </div>
-            <div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:12px solid #66BB6A;margin:0 auto;position:absolute;top:-14px;left:50%;transform:translateX(-50%);"></div>
-            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#66BB6A,#2E7D32);border:4px solid white;box-shadow:0 6px 20px rgba(46,125,50,0.6);display:flex;align-items:center;justify-content:center;font-size:22px;">🛍️</div>
-            <div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:12px;height:12px;background:#66BB6A;border-radius:50%;box-shadow:0 0 0 4px rgba(46,125,50,0.3);"></div>
-          </div>`,
-        className: '',
-        iconSize: [48, 80],
-        iconAnchor: [24, 54],
-      });
-
-      window.L.marker([STORE_LAT, STORE_LNG], { icon: storeIcon })
-        .addTo(map)
-        .bindPopup(`
-          <div style="font-family:sans-serif;padding:6px;min-width:180px;">
-            <div style="font-size:15px;font-weight:800;color:#0d2818;margin-bottom:4px;">🌿 EcoMart</div>
-            <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">New Road, Kathmandu 44600, Nepal</div>
-            <div style="font-size:11px;background:#E8F5E9;color:#1B5E20;padding:4px 8px;border-radius:6px;font-weight:600;">📦 Free delivery across Kathmandu</div>
-          </div>
-        `, { maxWidth: 220 });
-
-      // Accuracy circle
-      window.L.circle([STORE_LAT, STORE_LNG], {
-        radius: 80,
-        color: '#66BB6A',
-        fillColor: '#66BB6A',
-        fillOpacity: 0.12,
-        weight: 2,
-        dashArray: '6 4',
-      }).addTo(map);
-    };
-
-    if (!window.L) {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => setTimeout(initMap, 100);
-      document.head.appendChild(script);
-    } else {
-      setTimeout(initMap, 100);
+  const handleSaveAddress = async (e) => {
+    e.preventDefault();
+    setSavingAddress(true);
+    try {
+      const { data } = await api.post('/users/addresses', addressForm);
+      setAddresses(data.addresses);
+      const newest = data.addresses[data.addresses.length - 1];
+      setSelectedAddressId(newest._id);
+      setShowAddressForm(false);
+      setAddressForm({ fullName: '', phone: '', street: '', city: '', state: '', postalCode: '', country: 'Nepal', isDefault: false });
+      toast.success('Address saved');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save address');
     }
-
-    return () => {
-      if (window._storeMap) { window._storeMap.remove(); window._storeMap = null; }
-    };
-  }, []);
-
-  const switchLayer = (type) => {
-    setMapType(type);
-    if (window._storeMap && window._mapLayers) {
-      if (window._currentLayer) window._storeMap.removeLayer(window._currentLayer);
-      window._mapLayers[type].addTo(window._storeMap);
-      window._currentLayer = window._mapLayers[type];
-    }
+    setSavingAddress(false);
   };
 
-  return (
-    <div>
-      {/* Map type toggle */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-        {[
-          { key: 'satellite', label: '🛰️ Satellite' },
-          { key: 'street',    label: '🗺️ Street' },
-        ].map(({ key, label }) => (
-          <button key={key} onClick={() => switchLayer(key)} style={{
-            padding: '7px 16px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-            fontFamily: '"DM Sans", sans-serif', fontWeight: 600, fontSize: '0.82rem',
-            background: mapType === key ? 'linear-gradient(135deg,#66BB6A,#2E7D32)' : '#f1f5f9',
-            color: mapType === key ? '#0d2818' : '#64748b',
-            boxShadow: mapType === key ? '0 2px 10px rgba(46,125,50,0.35)' : 'none',
-            transition: 'all 0.2s',
-          }}>
-            {label}
-          </button>
-        ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#94a3b8' }}>
-          <FiLayers size={13} /> Real-time satellite imagery
-        </div>
-      </div>
-
-      {/* Added zIndex: 1 inline property below to resolve scrolling overlap conflict */}
-      <div id="store-map" style={{ height: '420px', borderRadius: '16px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 24px rgba(0,0,0,0.1)', zIndex: 1 }} />
-
-      {/* Address bar below map */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px', padding: '12px 16px', background: 'linear-gradient(135deg,#E8F5E9,#C8E6C9)', borderRadius: '12px', border: '1px solid #A5D6A7' }}>
-        <FiMapPin size={16} color="#2E7D32" style={{ flexShrink: 0 }} />
-        <div>
-          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1B5E20' }}>EcoMart Store</div>
-          <div style={{ fontSize: '0.78rem', color: '#2E7D32' }}>New Road, Kathmandu 44600, Bagmati Province, Nepal</div>
-        </div>
-        <a
-          href={`https://www.google.com/maps/search/?api=1&query=${STORE_LAT},${STORE_LNG}`}
-          target="_blank"
-          rel="noreferrer"
-          style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: '10px', background: '#0d2818', color: 'white', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', fontFamily: '"Times New Roman", Times, serif' }}
-        >
-          Open in Maps →
-        </a>
-      </div>
-    </div>
-  );
-};
-
-const ContactPage = () => {
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
-  const [sending, setSending] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name || !form.email || !form.message) {
-      toast.error('Please fill all required fields');
+  const handlePlaceOrder = async () => {
+    if (!selectedAddress) {
+      toast.error('Please select a delivery address');
+      setStep(0);
       return;
     }
-    setSending(true);
+    setPlacingOrder(true);
     try {
-      await api.post('/auth/contact', form);
-      toast.success('Message sent! We will reply within 24 hours. ✅');
-      setForm({ name: '', email: '', subject: '', message: '' });
+      // 1. Create the order
+      const { data: orderData } = await api.post('/orders', {
+        items: cart.items.map(item => ({
+          product: item.product?._id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        shippingAddress: selectedAddress,
+        paymentMethod,
+        subtotal,
+        discount,
+        shipping,
+        tax,
+        total,
+        couponCode: cart.couponCode || undefined,
+      });
+      const order = orderData.order;
+      const returnUrl = `${window.location.origin}/payment-response/${paymentMethod}`;
+
+      // 2. Kick off payment based on method
+      if (paymentMethod === 'esewa') {
+        const { data } = await api.post('/payment/esewa/initiate', {
+          orderId: order._id, amount: total, returnUrl,
+        });
+        redirectToEsewa(data.formAction, data.formData);
+        return; // navigating away — don't clear cart yet, verify step does that
+      }
+
+      if (paymentMethod === 'khalti') {
+        const { data } = await api.post('/payment/khalti/initiate', {
+          orderId: order._id, amount: total, returnUrl,
+        });
+        window.location.href = data.paymentUrl;
+        return;
+      }
+
+      if (paymentMethod === 'cod') {
+        await api.post('/payment/cod', { orderId: order._id });
+        await clearCart();
+        toast.success('Order placed! Pay on delivery.');
+        navigate(`/order-success/${order._id}`);
+        return;
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to place order. Please try again.');
+      setPlacingOrder(false);
     }
-    setSending(false);
   };
 
-  const info = [
-    { icon: FiMapPin, label: 'Address',       value: 'New Road, Kathmandu, Nepal',  color: '#66BB6A' },
-    { icon: FiPhone,  label: 'Phone',         value: '+977-9843787681',               color: '#3b82f6' },
-    { icon: FiMail,   label: 'Email',         value: 'ecomartsupport@gmail.com',         color: '#10b981', href: 'mailto:ecomartsupport@gmail.com?subject=EcoMart Support Query' },
-    { icon: FiClock,  label: 'Support Hours', value: 'Sun–Fri, 9AM – 6PM',           color: '#a16207' },
-  ];
-
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px', fontFamily: '"DM Sans", sans-serif' }}>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <h1 style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '1.8rem', fontWeight: 800, color: '#263238', marginBottom: '8px' }}>
+        Checkout
+      </h1>
 
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(46,125,50,0.1)', border: '1px solid rgba(46,125,50,0.3)', borderRadius: '99px', padding: '6px 16px', marginBottom: '16px' }}>
-          <FiMapPin size={14} color="#66BB6A" />
-          <span style={{ color: '#66BB6A', fontSize: '0.8rem', fontWeight: 600 }}>Find Us</span>
-        </div>
-        <h1 style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 800, fontSize: 'clamp(1.8rem,4vw,2.8rem)', color: '#263238', margin: '0 0 12px', letterSpacing: '-0.03em' }}>
-          Get in <span style={{ color: '#66BB6A' }}>Touch</span>
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '1rem', maxWidth: '480px', margin: '0 auto', lineHeight: 1.7 }}>
-          Have a question? We are here for you — reach out and we will respond within 24 hours.
-        </p>
+      {/* Stepper */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px' }}>
+        {STEPS.map((label, i) => (
+          <React.Fragment key={label}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: i <= step ? 'linear-gradient(135deg,#66BB6A,#2E7D32)' : '#e2e8f0',
+                color: i <= step ? '#fff' : '#94a3b8', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0,
+              }}>
+                {i < step ? <FiCheck size={16} /> : i + 1}
+              </div>
+              <span style={{ color: i <= step ? '#66BB6A' : '#94a3b8', fontWeight: i === step ? 700 : 500, fontSize: '0.9rem' }}>{label}</span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div style={{ flex: 1, height: '2px', background: i < step ? '#66BB6A' : '#e2e8f0', minWidth: '30px' }} />
+            )}
+          </React.Fragment>
+        ))}
       </div>
 
-      {/* Info + Form grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '28px', marginBottom: '36px' }}>
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
 
-        {/* Info cards */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {info.map((item) => { const { icon: Icon, label, value, color } = item; return (
-            <div key={label} onClick={() => {
-                  if (item.href) {
-                    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                    if (isMobile) {
-                      window.location.href = 'mailto:ecomartsupport@gmail.com?subject=ecomart Support Query';
-                    } else {
-                      window.open('https://mail.google.com/mail/?view=cm&to=ecomartsupport@gmail.com&su=EcoMart+Support+Query', '_blank');
-                    }
-                  }
-                }} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px', background: 'white', borderRadius: '14px', border: '1px solid #f1f5f9', boxShadow: '0 1px 8px rgba(0,0,0,0.05)', cursor: item.href ? 'pointer' : 'default' }}>
-              <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: `${color}15`, border: `1px solid ${color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon size={18} color={color} />
-              </div>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>{label}</div>
-                <div style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 500 }}>{value}</div>
-              </div>
-            </div>
-          )})}
+          {/* ── STEP 1: Address ── */}
+          {step === 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl p-6 shadow-card">
+              <h2 style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 700, fontSize: '1.15rem', color: '#263238', marginBottom: '16px' }}>
+                Delivery Address
+              </h2>
 
-          {/* Members Box */}
-          <div style={{ padding: '16px', background: 'white', borderRadius: '14px', border: '1px solid #f1f5f9', boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Members</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {['Ritesh Bhandari', 'Anup Dhakal', 'Samyog Shrestha', 'Babin Gaha'].map((name) => (
-                <span key={name} style={{ fontSize: '0.8rem', color: '#334155', background: '#f8fafc', padding: '4px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontWeight: 500 }}>
-                  {name}
-                </span>
-              ))}
-            </div>
+              {addresses.length > 0 && !showAddressForm && (
+                <div className="space-y-3 mb-4">
+                  {addresses.map(addr => (
+                    <label key={addr._id} style={{
+                      display: 'flex', gap: '12px', padding: '14px', borderRadius: '12px', cursor: 'pointer',
+                      border: selectedAddressId === addr._id ? '2px solid #66BB6A' : '1px solid #e2e8f0',
+                      background: selectedAddressId === addr._id ? 'rgba(46,125,50,0.05)' : '#fff',
+                    }}>
+                      <input type="radio" name="address" checked={selectedAddressId === addr._id}
+                        onChange={() => setSelectedAddressId(addr._id)} style={{ marginTop: '4px' }} />
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#263238', fontSize: '0.9rem' }}>{addr.fullName} · {addr.phone}</div>
+                        <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '2px' }}>
+                          {addr.street}, {addr.city}, {addr.state} {addr.postalCode}, {addr.country}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {!showAddressForm ? (
+                <button onClick={() => setShowAddressForm(true)} className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#2E7D32' }}>
+                  <FiPlus size={16} /> Add new address
+                </button>
+              ) : (
+                <form onSubmit={handleSaveAddress} className="space-y-3 border-t pt-4 mt-2">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <input required placeholder="Full name" value={addressForm.fullName}
+                      onChange={e => setAddressForm(p => ({ ...p, fullName: e.target.value }))}
+                      className="px-3 py-2 border rounded-lg text-sm" />
+                    <input required placeholder="Phone" value={addressForm.phone}
+                      onChange={e => setAddressForm(p => ({ ...p, phone: e.target.value }))}
+                      className="px-3 py-2 border rounded-lg text-sm" />
+                  </div>
+                  <input required placeholder="Street address" value={addressForm.street}
+                    onChange={e => setAddressForm(p => ({ ...p, street: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-lg text-sm" />
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <input required placeholder="City" value={addressForm.city}
+                      onChange={e => setAddressForm(p => ({ ...p, city: e.target.value }))}
+                      className="px-3 py-2 border rounded-lg text-sm" />
+                    <input required placeholder="State/Province" value={addressForm.state}
+                      onChange={e => setAddressForm(p => ({ ...p, state: e.target.value }))}
+                      className="px-3 py-2 border rounded-lg text-sm" />
+                    <input required placeholder="Postal code" value={addressForm.postalCode}
+                      onChange={e => setAddressForm(p => ({ ...p, postalCode: e.target.value }))}
+                      className="px-3 py-2 border rounded-lg text-sm" />
+                  </div>
+                  <div className="flex gap-3">
+                    <button type="submit" disabled={savingAddress} className="btn-primary text-sm px-5 py-2">
+                      {savingAddress ? 'Saving...' : 'Save Address'}
+                    </button>
+                    <button type="button" onClick={() => setShowAddressForm(false)} className="text-sm text-gray-500">Cancel</button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          )}
+
+          {/* ── STEP 2: Payment ── */}
+          {step === 1 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl p-6 shadow-card">
+              <h2 style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 700, fontSize: '1.15rem', color: '#263238', marginBottom: '16px' }}>
+                Payment Method
+              </h2>
+              <div className="space-y-3">
+                {[
+                  { key: 'esewa', label: 'eSewa', desc: 'Pay securely via eSewa wallet', icon: '💚' },
+                  { key: 'khalti', label: 'Khalti', desc: 'Pay securely via Khalti wallet', icon: '💜' },
+                  { key: 'cod', label: 'Cash on Delivery', desc: 'Pay when your order arrives', icon: '💵' },
+                ].map(opt => (
+                  <label key={opt.key} style={{
+                    display: 'flex', alignItems: 'center', gap: '14px', padding: '16px', borderRadius: '12px', cursor: 'pointer',
+                    border: paymentMethod === opt.key ? '2px solid #66BB6A' : '1px solid #e2e8f0',
+                    background: paymentMethod === opt.key ? 'rgba(46,125,50,0.05)' : '#fff',
+                  }}>
+                    <input type="radio" name="payment" checked={paymentMethod === opt.key}
+                      onChange={() => setPaymentMethod(opt.key)} />
+                    <span style={{ fontSize: '22px' }}>{opt.icon}</span>
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#263238', fontSize: '0.92rem' }}>{opt.label}</div>
+                      <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{opt.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── STEP 3: Review ── */}
+          {step === 2 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl p-6 shadow-card">
+              <h2 style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 700, fontSize: '1.15rem', color: '#263238', marginBottom: '16px' }}>
+                Order Review
+              </h2>
+
+              <div className="space-y-3 mb-5">
+                {cart.items.map(item => (
+                  <div key={item._id} className="flex items-center gap-3 pb-3 border-b last:border-b-0">
+                    <img src={item.product?.images?.[0]?.url || 'https://picsum.photos/60/60'} alt={item.product?.name}
+                      className="w-14 h-14 rounded-lg object-cover bg-gray-100" />
+                    <div className="flex-1 min-w-0">
+                      <div style={{ fontWeight: 600, color: '#263238', fontSize: '0.88rem' }}>{item.product?.name}</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>Qty: {item.quantity}</div>
+                    </div>
+                    <div style={{ fontWeight: 700, color: '#263238', fontSize: '0.88rem' }}>{formatPrice(item.price * item.quantity)}</div>
+                  </div>
+                ))}
+              </div>
+
+              {selectedAddress && (
+                <div style={{ display: 'flex', gap: '10px', padding: '14px', borderRadius: '12px', background: '#f8faf8', marginBottom: '12px' }}>
+                  <FiMapPin size={16} color="#2E7D32" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div style={{ fontSize: '0.85rem', color: '#475569' }}>
+                    <strong style={{ color: '#263238' }}>{selectedAddress.fullName}</strong> · {selectedAddress.phone}<br />
+                    {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state} {selectedAddress.postalCode}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', padding: '14px', borderRadius: '12px', background: '#f8faf8' }}>
+                {paymentMethod === 'cod' ? <FiTruck size={16} color="#2E7D32" /> : <FiCreditCard size={16} color="#2E7D32" />}
+                <div style={{ fontSize: '0.85rem', color: '#475569' }}>
+                  Payment via <strong style={{ color: '#263238', textTransform: 'capitalize' }}>{paymentMethod === 'cod' ? 'Cash on Delivery' : paymentMethod}</strong>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step navigation */}
+          <div className="flex gap-3">
+            {step > 0 && (
+              <button onClick={() => setStep(s => s - 1)} className="flex items-center gap-2 px-5 py-3 rounded-xl border text-sm font-semibold" style={{ color: '#263238', borderColor: '#e2e8f0' }}>
+                <FiArrowLeft size={16} /> Back
+              </button>
+            )}
+            {step < 2 ? (
+              <button
+                onClick={() => setStep(s => s + 1)}
+                disabled={step === 0 && !selectedAddress}
+                className="flex-1 btn-primary py-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue
+              </button>
+            ) : (
+              <button onClick={handlePlaceOrder} disabled={placingOrder} className="flex-1 btn-primary py-3 text-sm disabled:opacity-60">
+                {placingOrder ? 'Placing Order...' : `Place Order · ${formatPrice(total)}`}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Contact form */}
-        <div style={{ background: 'white', borderRadius: '20px', padding: '28px', border: '1px solid #f1f5f9', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-          <h2 style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 700, fontSize: '1.2rem', color: '#263238', margin: '0 0 20px' }}>Send us a message</h2>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {[
-              { label: 'Your Name *',      key: 'name',    type: 'text',  placeholder: 'Ritesh Bhandari' },
-              { label: 'Email Address *',  key: 'email',   type: 'email', placeholder: 'you@example.com' },
-              { label: 'Subject',          key: 'subject', type: 'text',  placeholder: 'How can we help?' },
-            ].map(({ label, key, type, placeholder }) => (
-              <div key={key}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '5px' }}>{label}</label>
-                <input type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={placeholder}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', fontFamily: '"DM Sans", sans-serif', color: '#263238' }}
-                  onFocus={e => e.target.style.borderColor = '#66BB6A'}
-                  onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                />
+        {/* Order Summary sidebar */}
+        <div>
+          <div className="bg-white rounded-2xl p-5 shadow-card sticky top-24">
+            <h2 style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 700, fontSize: '1.05rem', color: '#263238', marginBottom: '16px' }}>
+              Order Summary
+            </h2>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+              {discount > 0 && <div className="flex justify-between"><span style={{ color: '#2E7D32' }}>Discount</span><span style={{ color: '#2E7D32' }}>-{formatPrice(discount)}</span></div>}
+              <div className="flex justify-between"><span className="text-gray-600">Shipping</span><span style={{ color: shipping === 0 ? '#2E7D32' : undefined }}>{shipping === 0 ? 'FREE' : formatPrice(shipping)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Tax (13%)</span><span>{formatPrice(tax)}</span></div>
+              <div className="border-t pt-2 flex justify-between font-bold text-lg" style={{ color: '#263238' }}>
+                <span>Total</span><span>{formatPrice(total)}</span>
               </div>
-            ))}
-            <div>
-              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '5px' }}>Message *</label>
-              <textarea value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} placeholder="Write your message here..." rows={4}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', fontFamily: '"DM Sans", sans-serif', color: '#263238', resize: 'vertical' }}
-                onFocus={e => e.target.style.borderColor = '#66BB6A'}
-                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-              />
             </div>
-            <button type="submit" disabled={sending} style={{ padding: '12px', borderRadius: '12px', border: 'none', background: sending ? '#e2e8f0' : 'linear-gradient(135deg,#66BB6A,#2E7D32)', color: sending ? '#94a3b8' : '#0d2818', fontFamily: '"Times New Roman", Times, serif', fontWeight: 700, fontSize: '0.95rem', cursor: sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: sending ? 'none' : '0 4px 16px rgba(46,125,50,0.35)', transition: 'all 0.2s' }}>
-              {sending ? 'Sending...' : <><FiSend size={15} /> Send Message</>}
-            </button>
-          </form>
+          </div>
         </div>
-      </div>
-
-      {/* Satellite Map */}
-      <div style={{ background: 'white', borderRadius: '20px', padding: '24px', border: '1px solid #f1f5f9', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-        <h2 style={{ fontFamily: '"Times New Roman", Times, serif', fontWeight: 700, fontSize: '1.1rem', color: '#263238', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <FiMapPin size={16} color="#66BB6A" /> Our Location — Satellite View
-        </h2>
-        <StoreMap />
       </div>
     </div>
   );
 };
 
-export default ContactPage;
+export default CheckoutPage;
