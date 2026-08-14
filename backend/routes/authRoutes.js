@@ -1,8 +1,20 @@
 const express = require('express');
 const router = express.Router();
-// Add any other required models or mailers here if needed (e.g., User, sendEmail)
+const passport = require('passport');
+const { register, login, getMe, googleCallback } = require('../controllers/authController');
+const { protect } = require('../middleware/auth');
+const sendEmail = require('../utils/sendEmail');
 
-// ─── Contact Form ─────────────────────────────────────────────────────────────
+// ─── Standard Auth Routes ─────────────────────────────────────────────────────
+router.post('/register', register);
+router.post('/login', login);
+router.get('/me', protect, getMe);
+
+// ─── Google OAuth Routes ──────────────────────────────────────────────────────
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: '/login' }), googleCallback);
+
+// ─── Contact Form Route ───────────────────────────────────────────────────────
 router.post('/contact', async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
@@ -16,7 +28,7 @@ router.post('/contact', async (req, res) => {
 
     try {
       await sendEmail({
-        to: 'ecomartsupport@gmail.com', // ✅ Updated recipient email so problems submitted go here
+        to: 'ecomartsupport@gmail.com',
         subject: 'EcoMart Contact: ' + (subject || 'New message from ' + name),
         html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">'
           + '<div style="background:linear-gradient(135deg,#064e3b,#022c22);padding:30px;text-align:center;"><h1 style="color:#34d399;margin:0;">New Contact Message</h1></div>'
