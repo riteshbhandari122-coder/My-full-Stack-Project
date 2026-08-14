@@ -1,3 +1,7 @@
+const express = require('express');
+const router = express.Router();
+// Add any other required models or mailers here if needed (e.g., User, sendEmail)
+
 // ─── Contact Form ─────────────────────────────────────────────────────────────
 router.post('/contact', async (req, res) => {
   try {
@@ -12,7 +16,7 @@ router.post('/contact', async (req, res) => {
 
     try {
       await sendEmail({
-        to: 'ecomartsupport@gmail.com', // ✅ Fixed recipient email
+        to: 'ecomartsupport@gmail.com', // ✅ Updated recipient email so problems submitted go here
         subject: 'EcoMart Contact: ' + (subject || 'New message from ' + name),
         html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">'
           + '<div style="background:linear-gradient(135deg,#064e3b,#022c22);padding:30px;text-align:center;"><h1 style="color:#34d399;margin:0;">New Contact Message</h1></div>'
@@ -66,3 +70,5 @@ router.post('/contact', async (req, res) => {
     });
   }
 });
+
+module.exports = router;
