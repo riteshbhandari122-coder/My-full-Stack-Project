@@ -64,8 +64,16 @@ const OrdersPage = () => {
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="font-bold text-gray-900">Order #{order.orderNumber}</p>
-                  <p className="text-sm text-gray-500">{formatDate(order.createdAt)}</p>
+                  {/* ✅ FIXED: Display product names as the main header instead of just the order number */}
+                  <p className="font-bold text-gray-900 text-base">
+                    {order.items && order.items.length > 0
+                      ? order.items.map(item => item.name).join(', ')
+                      : 'Order Items'}
+                  </p>
+                  {/* Order Number & Date shown as sub-details */}
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Order #{order.orderNumber} • {formatDate(order.createdAt)}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold bg-${statusInfo.color}-100 text-${statusInfo.color}-700`}>
