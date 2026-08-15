@@ -11,33 +11,28 @@
     <changefreq>daily</changefreq>
   </url>
   <url>
-    <loc>https://my-full-stack-project-one.vercel.app/login</loc>
-    <priority>0.8</priority>
-    <changefreq>monthly</changefreq>
-  </url>
-  <url>
-    <loc>https://my-full-stack-project-one.vercel.app/register</loc>
-    <priority>0.8</priority>
-    <changefreq>monthly</changefreq>
-  </url>
-  <url>
-    <loc>https://my-full-stack-project-one.vercel.app/cart</loc>
-    <priority>0.7</priority>
-    <changefreq>weekly</changefreq>
-  </url>
-  <url>
-    <loc>https://my-full-stack-project-one.vercel.app/search</loc>
-    <priority>0.7</priority>
-    <changefreq>weekly</changefreq>
-  </url>
-  <url>
     <loc>https://my-full-stack-project-one.vercel.app/rewards</loc>
     <priority>0.8</priority>
     <changefreq>weekly</changefreq>
   </url>
   <url>
-    <loc>https://my-full-stack-project-one.vercel.app/recycle</loc>
+    <loc>https://my-full-stack-project-one.vercel.app/recycling-center</loc>
     <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://my-full-stack-project-one.vercel.app/know-how-to-recycle</loc>
+    <priority>0.7</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://my-full-stack-project-one.vercel.app/contact</loc>
+    <priority>0.6</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://my-full-stack-project-one.vercel.app/search</loc>
+    <priority>0.5</priority>
     <changefreq>weekly</changefreq>
   </url>
 </urlset>

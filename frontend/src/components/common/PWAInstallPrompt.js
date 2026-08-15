@@ -114,7 +114,7 @@ const PWAInstallPrompt = () => {
               width: '48px',
               height: '48px',
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, #10b981, #059669)',
+              background: 'linear-gradient(135deg, #66BB6A, #2E7D32)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -180,7 +180,7 @@ const PWAInstallPrompt = () => {
                 padding: '10px',
                 borderRadius: '12px',
                 border: 'none',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
+                background: 'linear-gradient(135deg, #66BB6A, #2E7D32)',
                 color: 'white',
                 fontSize: '14px',
                 fontWeight: '700',
@@ -196,13 +196,13 @@ const PWAInstallPrompt = () => {
         {isIOS && (
           <div
             style={{
-              background: '#ecfdf5',
+              background: '#E8F5E9',
               borderRadius: '12px',
               padding: '12px 14px',
               marginTop: '4px',
             }}
           >
-            <p style={{ margin: 0, fontSize: '13px', color: '#047857', textAlign: 'center', lineHeight: 1.6 }}>
+            <p style={{ margin: 0, fontSize: '13px', color: '#1B5E20', textAlign: 'center', lineHeight: 1.6 }}>
               Tap the <strong>Share</strong> button{' '}
               <span style={{ fontSize: '16px' }}>⎙</span>{' '}
               at the bottom of Safari, then tap{' '}

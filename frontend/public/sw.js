@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shopmart-v2'; // bumped version to force refresh
+const CACHE_NAME = 'ecomart-v1'; // bumped version to force refresh
 
 // ✅ Only cache files that actually exist at these exact paths.
 // Do NOT list /static/js/main.chunk.js or /static/js/bundle.js —
@@ -16,10 +16,10 @@ const STATIC_ASSETS = [
 
 // ✅ Install — cache only the safe static shell
 self.addEventListener('install', (event) => {
-  console.log('ShopMart SW: Installing...');
+  console.log('EcoMart SW: Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('ShopMart SW: Caching static assets');
+      console.log('EcoMart SW: Caching static assets');
       // Use individual adds so one failure doesn't block the rest
       return Promise.allSettled(
         STATIC_ASSETS.map((url) =>
@@ -33,14 +33,14 @@ self.addEventListener('install', (event) => {
 
 // ✅ Activate — clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('ShopMart SW: Activating...');
+  console.log('EcoMart SW: Activating...');
   event.waitUntil(
     caches.keys().then((cacheNames) =>
       Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
           .map((name) => {
-            console.log('ShopMart SW: Deleting old cache:', name);
+            console.log('EcoMart SW: Deleting old cache:', name);
             return caches.delete(name);
           })
       )
@@ -134,7 +134,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
   const options = {
-    body: data.body || 'You have a new notification from ShopMart!',
+    body: data.body || 'You have a new notification from EcoMart!',
     icon: '/logo192.png',
     badge: '/logo192.png',
     vibrate: [100, 50, 100],
@@ -145,7 +145,7 @@ self.addEventListener('push', (event) => {
     ],
   };
   event.waitUntil(
-    self.registration.showNotification(data.title || 'ShopMart', options)
+    self.registration.showNotification(data.title || 'EcoMart', options)
   );
 });
 

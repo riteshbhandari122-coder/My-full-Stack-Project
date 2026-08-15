@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /cart
+Disallow: /profile
+Disallow: /orders
+Disallow: /addresses
+Disallow: /wishlist
+Disallow: /payment-response
+
+Sitemap: https://my-full-stack-project-one.vercel.app/sitemap.xml
