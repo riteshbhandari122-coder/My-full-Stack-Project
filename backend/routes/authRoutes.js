@@ -42,7 +42,7 @@ router.post('/forgot-password', async (req, res) => {
 
     await sendEmail({
       to: email,
-      subject: 'ShopMart — Your Password Reset Code',
+      subject: 'EcoMart — Your Password Reset Code',
       html: emailTemplates.otpEmail(otp),
     });
 
@@ -195,8 +195,8 @@ router.post('/contact', async (req, res) => {
 
     try {
       await sendEmail({
-        to: 'shopmartsupport@gmail.com',
-        subject: 'ShopMart Contact: ' + (subject || 'New message from ' + name),
+        to: 'ecomartsupport@gmail.com',
+        subject: 'EcoMart Contact: ' + (subject || 'New message from ' + name),
         html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">'
           + '<div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:30px;text-align:center;"><h1 style="color:white;margin:0;">New Contact Message</h1></div>'
           + '<div style="padding:30px;background:#f9f9f9;">'
@@ -211,7 +211,7 @@ router.post('/contact', async (req, res) => {
           + '<div style="margin-top:24px;padding:12px 16px;background:#e8f4fd;border-radius:8px;">'
           + '<p style="margin:0;font-size:13px;color:#555;">Reply to <strong>' + email + '</strong> to respond to <strong>' + name + '</strong></p>'
           + '</div></div>'
-          + '<div style="padding:16px;background:#eee;text-align:center;"><p style="margin:0;font-size:12px;color:#aaa;">ShopMart Nepal Contact Form</p></div></div>',
+          + '<div style="padding:16px;background:#eee;text-align:center;"><p style="margin:0;font-size:12px;color:#aaa;">EcoMart Nepal Contact Form</p></div></div>',
       });
     } catch (emailErr) {
       console.error('Support email failed:', emailErr.message);
@@ -220,17 +220,17 @@ router.post('/contact', async (req, res) => {
     try {
       await sendEmail({
         to: email,
-        subject: 'We received your message — ShopMart Support',
+        subject: 'We received your message — EcoMart Support',
         html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">'
           + '<div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:30px;text-align:center;"><h1 style="color:white;margin:0;">Message Received! ✅</h1></div>'
           + '<div style="padding:30px;background:#f9f9f9;">'
           + '<h2>Hi ' + name + '!</h2>'
-          + '<p>Thank you for contacting ShopMart. We will get back to you within <strong>24 hours</strong>.</p>'
+          + '<p>Thank you for contacting EcoMart. We will get back to you within <strong>24 hours</strong>.</p>'
           + '<div style="background:white;padding:16px;border-radius:8px;border-left:4px solid #667eea;color:#555;margin:20px 0;">'
           + '<strong>Your message:</strong><br/><br/>' + msgHtml + '</div>'
           + '<p style="color:#888;font-size:13px;">Urgent? Call us at <strong>+977-9800000000</strong></p>'
           + '</div>'
-          + '<div style="padding:16px;background:#eee;text-align:center;"><p style="margin:0;font-size:12px;color:#aaa;">© ShopMart Nepal · shopmartsupport@gmail.com</p></div></div>',
+          + '<div style="padding:16px;background:#eee;text-align:center;"><p style="margin:0;font-size:12px;color:#aaa;">© EcoMart Nepal · ecomartsupport@gmail.com</p></div></div>',
       });
     } catch (emailErr) {
       console.error('User confirmation email failed:', emailErr.message);
