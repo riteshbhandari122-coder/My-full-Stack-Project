@@ -55,7 +55,10 @@ const emailTemplates = {
         <p style="color: #555;">Thank you for your order! We have received it and will start processing right away.</p>
         
         <div style="background:white;border-radius:10px;padding:20px;margin:20px 0;border:1px solid #eee;">
-          <p style="margin:0 0 12px;font-weight:bold;color:#064e3b;font-size:15px;">Order Summary (#${order.orderNumber})</p>
+          <p style="margin:0 0 12px;font-weight:bold;color:#064e3b;font-size:15px;">
+            ${order.items[0]?.name || 'Order'}${order.items.length > 1 ? ` + ${order.items.length - 1} more` : ''}
+            <span style="font-weight:normal;color:#888;font-size:13px;"> · #${order.orderNumber}</span>
+          </p>
           
           <table style="width:100%;border-collapse:collapse;">
             ${order.items.map(item => `

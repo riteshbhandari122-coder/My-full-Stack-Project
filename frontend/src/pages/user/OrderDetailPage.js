@@ -7,8 +7,8 @@ import toast from 'react-hot-toast';
 
 // ─── Delivery status → coordinates in Kathmandu ──────────────────────────────
 const STATUS_LOCATIONS = {
-  placed:           { lat: 27.7172, lng: 85.3240, label: 'Order received at ShopMart warehouse' },
-  confirmed:        { lat: 27.7172, lng: 85.3240, label: 'Order confirmed at ShopMart warehouse' },
+  placed:           { lat: 27.7172, lng: 85.3240, label: 'Order received at EcoMart warehouse' },
+  confirmed:        { lat: 27.7172, lng: 85.3240, label: 'Order confirmed at EcoMart warehouse' },
   packed:           { lat: 27.7089, lng: 85.3200, label: 'Package packed — ready for pickup' },
   shipped:          { lat: 27.7050, lng: 85.3150, label: 'In transit — Kathmandu hub' },
   out_for_delivery: { lat: 27.6950, lng: 85.3100, label: 'Out for delivery — near your area' },
@@ -57,7 +57,7 @@ const DeliveryMap = ({ status, address }) => {
 
         // Store marker (gold)
         const storeIcon = window.L.divIcon({
-          html: `<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);border:3px solid white;box-shadow:0 4px 12px rgba(245,158,11,0.5);display:flex;align-items:center;justify-content:center;font-size:16px;">🏪</div>`,
+          html: `<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#66BB6A,#2E7D32);border:3px solid white;box-shadow:0 4px 12px rgba(46,125,50,0.5);display:flex;align-items:center;justify-content:center;font-size:16px;">🏪</div>`,
           className: '',
           iconSize: [36, 36],
           iconAnchor: [18, 18],
@@ -74,10 +74,10 @@ const DeliveryMap = ({ status, address }) => {
           iconAnchor: [20, 20],
         });
 
-        // Add store marker — ShopMart HQ (Kathmandu)
+        // Add store marker — EcoMart HQ (Kathmandu)
         window.L.marker([27.7172, 85.3240], { icon: storeIcon })
           .addTo(map)
-          .bindPopup('<b>ShopMart Warehouse</b><br/>Kathmandu, Nepal', { maxWidth: 200 });
+          .bindPopup('<b>EcoMart Warehouse</b><br/>Kathmandu, Nepal', { maxWidth: 200 });
 
         // Add delivery/current location marker
         window.L.marker([loc.lat, loc.lng], { icon: deliveryIcon })
@@ -88,7 +88,7 @@ const DeliveryMap = ({ status, address }) => {
         // Draw route line
         window.L.polyline(
           [[27.7172, 85.3240], [loc.lat, loc.lng]],
-          { color: '#f59e0b', weight: 3, dashArray: '8 6', opacity: 0.7 }
+          { color: '#66BB6A', weight: 3, dashArray: '8 6', opacity: 0.7 }
         ).addTo(map);
       }
     };
@@ -185,8 +185,14 @@ const OrderDetailPage = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link to="/orders" className="text-sm text-primary-600 hover:underline mb-1 block">← Back to Orders</Link>
-          <h1 className="text-2xl font-black text-gray-900">Order #{order.orderNumber}</h1>
-          <p className="text-gray-500 text-sm">{formatDate(order.createdAt)}</p>
+          <h1 className="text-2xl font-black text-gray-900">
+            {order.items && order.items.length > 0
+              ? order.items.length === 1
+                ? order.items[0].name
+                : `${order.items[0].name} + ${order.items.length - 1} more`
+              : 'Order Details'}
+          </h1>
+          <p className="text-gray-500 text-sm">Order #{order.orderNumber} · {formatDate(order.createdAt)}</p>
         </div>
         {canCancel && (
           <button onClick={handleCancel} disabled={cancelling} className="border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1">

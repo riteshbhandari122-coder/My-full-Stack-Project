@@ -7,6 +7,15 @@ const Coupon = require('../models/Coupon');
 const Notification = require('../models/Notification');
 const { sendEmail, emailTemplates } = require('../utils/sendEmail');
 
+// Builds a readable order label from its items, e.g. "Bamboo Toothbrush"
+// or "Bamboo Toothbrush + 2 more" — used in notifications and emails so
+// people see what they ordered instead of just a cryptic order number.
+const getOrderDisplayName = (items) => {
+  if (!items || items.length === 0) return 'Your order';
+  if (items.length === 1) return items[0].name;
+  return `${items[0].name} + ${items.length - 1} more`;
+};
+
 // @desc    Create order
 // @route   POST /api/orders
 // @access  Private
@@ -124,7 +133,7 @@ const createOrder = asyncHandler(async (req, res) => {
     await Notification.create({
       user: req.user._id,
       title: 'Order Placed!',
-      message: `Your order #${order.orderNumber} has been placed successfully`,
+      message: `${getOrderDisplayName(orderItems)} — order placed successfully`,
       type: 'order',
       link: `/orders/${order._id}`,
     });
@@ -180,7 +189,7 @@ const createOrder = asyncHandler(async (req, res) => {
     // Send email with populated order data
     await sendEmail({
       to: req.user.email,
-      subject: `Order Confirmed - #${order.orderNumber}`,
+      subject: `Order Confirmed: ${getOrderDisplayName(orderItems)} (#${order.orderNumber})`,
       html: emailTemplates.orderConfirmation(order),
     });
   } catch (err) {
@@ -334,7 +343,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     await Notification.create({
       user: order.user,
       title: 'Order Update',
-      message: message || `Your order #${order.orderNumber} is now ${status.replace('_', ' ')}`,
+      message: message || `${getOrderDisplayName(order.items)} is now ${status.replace('_', ' ')}`,
       type: 'delivery',
       link: `/orders/${order._id}`,
     });

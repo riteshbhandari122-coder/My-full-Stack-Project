@@ -64,10 +64,12 @@ const OrdersPage = () => {
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  {/* ✅ FIXED: Display product names as the main header instead of just the order number */}
+                  {/* Product name(s) shown as the main header instead of the order token */}
                   <p className="font-bold text-gray-900 text-base">
                     {order.items && order.items.length > 0
-                      ? order.items.map(item => item.name).join(', ')
+                      ? order.items.length === 1
+                        ? order.items[0].name
+                        : `${order.items[0].name} + ${order.items.length - 1} more`
                       : 'Order Items'}
                   </p>
                   {/* Order Number & Date shown as sub-details */}
