@@ -1,26 +1,46 @@
 const express = require('express');
 const router = express.Router();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { protect } = require('../middleware/authMiddleware');
+const {
+  submitRecycling,
+  getMyRecycling,
+  getAllRecycling,
+  updateRecyclingStatus,
+} = require('../controllers/recyclingController');
 
-// 🤖 High-Speed AI Vision Upcycle & Recycling Analysis
+// ─── Recycling Submission Routes (Waste Donation for Points) ─────────────────
+// POST /api/recycling        → Submit a recycling drop-off (private)
+// GET  /api/recycling/my     → Get user's recycling history (private)
+// GET  /api/recycling        → Community stats + recent records (public)
+// PUT  /api/recycling/:id    → Update record status (admin)
+
+router.post('/', protect, submitRecycling);
+router.get('/my', protect, getMyRecycling);
+router.get('/', protect, getAllRecycling);
+router.put('/:id', protect, updateRecyclingStatus);
+
+// ─── AI Upcycle & Recycling Vision Analysis ───────────────────────────────────
+// POST /api/recycling/analyze → Gemini image analysis for upcycle ideas
+
 router.post('/analyze', async (req, res) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       console.error('❌ GEMINI_API_KEY is missing from environment variables.');
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Server misconfiguration: GEMINI_API_KEY missing on Render.' 
+      return res.status(500).json({
+        success: false,
+        message: 'Server misconfiguration: GEMINI_API_KEY missing on Render.',
       });
     }
 
     const { imageBase64, mimeType } = req.body;
 
     if (!imageBase64) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'No image provided.' 
+      return res.status(400).json({
+        success: false,
+        message: 'No image provided.',
       });
     }
 
@@ -92,7 +112,7 @@ router.post('/analyze', async (req, res) => {
       const fixedText = cleanedJsonText
         .replace(/,\s*([\]}])/g, '$1')
         .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
-      
+
       parsedData = JSON.parse(fixedText);
     }
 
