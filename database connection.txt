@@ -1,2 +1,0 @@
-url: mongodb+srv://ritesh:ritesh123456789123456789@cluster0.in6hb63.mongodb.net/shopmart
-name: cluster0.in6hb63.mongodb.net

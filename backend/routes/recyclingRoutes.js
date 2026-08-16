@@ -1,6 +1,57 @@
 const express = require('express');
 const router = express.Router();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// ─── Gemini API Key Rotation ───────────────────────────────────────────────
+// Supports multiple keys via GEMINI_API_KEYS (comma-separated), falling back
+// to the single GEMINI_API_KEY if that's all that's set. Requests round-robin
+// across keys, and if a key hits a quota/rate-limit error specifically, the
+// request automatically retries with the next key instead of failing.
+const GEMINI_KEYS = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || '')
+  .split(',')
+  .map((k) => k.trim())
+  .filter(Boolean);
+
+let keyIndex = 0; // rotates across requests for even load distribution
+
+const isQuotaError = (err) => {
+  const msg = (err?.message || '').toLowerCase();
+  return msg.includes('quota') || msg.includes('rate limit') || msg.includes('429') || msg.includes('resource_exhausted');
+};
+
+// Tries each key in the pool (starting from the rotating pointer) until one
+// succeeds. Only retries on quota/rate-limit errors — other errors (bad
+// image, bad prompt, etc.) fail immediately since a different key won't help.
+async function generateWithKeyRotation(prompt, imagePart) {
+  if (GEMINI_KEYS.length === 0) {
+    throw new Error('No Gemini API key configured. Set GEMINI_API_KEY or GEMINI_API_KEYS.');
+  }
+
+  let lastError = null;
+
+  for (let attempt = 0; attempt < GEMINI_KEYS.length; attempt++) {
+    const key = GEMINI_KEYS[keyIndex];
+    keyIndex = (keyIndex + 1) % GEMINI_KEYS.length;
+
+    try {
+      const genAI = new GoogleGenerativeAI(key);
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-flash-latest',
+        generationConfig: { responseMimeType: 'application/json' },
+      });
+      const result = await model.generateContent([prompt, imagePart]);
+      return result.response.text();
+    } catch (err) {
+      lastError = err;
+      if (!isQuotaError(err)) {
+        throw err; // real error, not a quota issue — no point trying another key
+      }
+      console.warn(`⚠️ Gemini key ${attempt + 1}/${GEMINI_KEYS.length} hit quota/rate limit, trying next key...`);
+    }
+  }
+
+  throw lastError || new Error('All Gemini API keys exhausted');
+}
 const { protect } = require('../middleware/authMiddleware');
 const {
   submitRecycling,
@@ -25,13 +76,11 @@ router.put('/:id', protect, updateRecyclingStatus);
 
 router.post('/analyze', async (req, res) => {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      console.error('❌ GEMINI_API_KEY is missing from environment variables.');
+    if (GEMINI_KEYS.length === 0) {
+      console.error('❌ No Gemini API key configured (GEMINI_API_KEY or GEMINI_API_KEYS).');
       return res.status(500).json({
         success: false,
-        message: 'Server misconfiguration: GEMINI_API_KEY missing on Render.',
+        message: 'Server misconfiguration: no Gemini API key set on Render.',
       });
     }
 
@@ -43,12 +92,6 @@ router.post('/analyze', async (req, res) => {
         message: 'No image provided.',
       });
     }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
-      generationConfig: { responseMimeType: 'application/json' },
-    });
 
     const prompt = `
       You are an expert waste sorting and eco-upcycling assistant.
@@ -93,8 +136,7 @@ router.post('/analyze', async (req, res) => {
       },
     };
 
-    const result = await model.generateContent([prompt, imagePart]);
-    const responseText = result.response.text();
+    const responseText = await generateWithKeyRotation(prompt, imagePart);
 
     // 🛠️ Robust JSON Cleaning & Safe Parsing Fallback
     let cleanedJsonText = responseText.trim();
