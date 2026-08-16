@@ -25,6 +25,31 @@
     <meta name="twitter:description" content="Shop eco-friendly products, earn Green Points, donate waste for recycling, and redeem rewards." />
 
     <meta name="google-site-verification" content="qxf_R-BT6OFO74mnj2IkSCB1kz44Rjhhx-X0DcorcSQ" />
+
+    <!-- PWA: manifest + icons — required for "Install App" to be offered -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="EcoMart" />
+
+    <!-- Register service worker here (not in index.js) so Chrome/Android
+         recognizes the PWA as early as possible, enabling the install prompt -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(
+            (registration) => {
+              console.log('EcoMart SW registered:', registration.scope);
+            },
+            (err) => {
+              console.warn('EcoMart SW registration failed:', err);
+            }
+          );
+        });
+      }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

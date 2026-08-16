@@ -6,8 +6,8 @@ import App from './App';
 import { ThemeProvider } from './ThemeContext';
 import './index.css';
 
-// ✅ SW is now registered in public/index.html <head> for faster recognition
-// by Chrome Android. No need to register again here.
+// ✅ Service worker is registered in public/index.html <head> (not here) so
+// Chrome/Android recognizes the PWA as early as possible. See index.html.
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
