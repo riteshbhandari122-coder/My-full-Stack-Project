@@ -6,12 +6,14 @@ const GEMINI_KEYS = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY |
   .filter(Boolean);
 
 let keyIndex = 0;
+let cachedWorkingModel = null;
 
-// Candidate models ordered by priority
+// Official Google Gemini model identifiers ordered by priority
 const CANDIDATE_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
   'gemini-2.0-flash',
-  'gemini-2.5-flash',
-  'gemini-1.5-flash-latest',
+  'gemini-1.0-pro',
 ];
 
 const isQuotaError = (err) => {
@@ -26,10 +28,14 @@ const isNotFoundError = (err) => {
 
 async function withKeyRotation(runFn) {
   if (GEMINI_KEYS.length === 0) {
-    throw new Error('No Gemini API key configured. Set GEMINI_API_KEY or GEMINI_API_KEYS.');
+    throw new Error('No Gemini API key configured. Set GEMINI_API_KEY or GEMINI_API_KEYS in your environment.');
   }
 
   let lastError = null;
+
+  const modelsToTry = cachedWorkingModel
+    ? [cachedWorkingModel, ...CANDIDATE_MODELS.filter((m) => m !== cachedWorkingModel)]
+    : [...CANDIDATE_MODELS];
 
   for (let attempt = 0; attempt < GEMINI_KEYS.length; attempt++) {
     const key = GEMINI_KEYS[keyIndex];
@@ -37,19 +43,22 @@ async function withKeyRotation(runFn) {
 
     const genAI = new GoogleGenerativeAI(key);
 
-    for (const modelName of CANDIDATE_MODELS) {
+    for (const modelName of modelsToTry) {
       try {
-        return await runFn(genAI, modelName);
+        const result = await runFn(genAI, modelName);
+        cachedWorkingModel = modelName;
+        return result;
       } catch (err) {
         lastError = err;
 
         if (isNotFoundError(err)) {
-          console.warn(`⚠️ Model "${modelName}" returned 404/deprecated. Trying next candidate model...`);
+          console.warn(`⚠️ Model "${modelName}" returned 404. Trying next candidate model...`);
+          if (cachedWorkingModel === modelName) cachedWorkingModel = null;
           continue;
         }
 
         if (isQuotaError(err)) {
-          console.warn(`⚠️ Gemini key ${attempt + 1}/${GEMINI_KEYS.length} hit quota/rate limit, switching key...`);
+          console.warn(`⚠️ Gemini API key ${attempt + 1}/${GEMINI_KEYS.length} hit quota limit. Rotating API key...`);
           break;
         }
 
@@ -58,7 +67,13 @@ async function withKeyRotation(runFn) {
     }
   }
 
-  throw lastError || new Error('All Gemini API keys and models exhausted');
+  if (lastError && isNotFoundError(lastError)) {
+    throw new Error(
+      'Gemini API returned 404 for all model endpoints. Please verify that "Generative Language API" is enabled in your Google Cloud Console for this API key.'
+    );
+  }
+
+  throw lastError || new Error('All Gemini API keys and candidate models exhausted.');
 }
 
 module.exports = { GEMINI_KEYS, withKeyRotation };
