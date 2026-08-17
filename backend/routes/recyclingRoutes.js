@@ -17,10 +17,10 @@ router.put('/:id', protect, updateRecyclingStatus);
 router.post('/analyze', async (req, res) => {
   try {
     if (GEMINI_KEYS.length === 0) {
-      console.error('❌ No Gemini API key configured (GEMINI_API_KEY or GEMINI_API_KEYS).');
+      console.error('❌ No Gemini API key configured.');
       return res.status(500).json({
         success: false,
-        message: 'Server misconfiguration: no Gemini API key set on Render.',
+        message: 'Server misconfiguration: no Gemini API key set.',
       });
     }
 
