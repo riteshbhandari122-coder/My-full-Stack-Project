@@ -3,18 +3,6 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const { GEMINI_KEYS, withKeyRotation } = require('../utils/geminiClient');
 
-// ─── EcoMart AI Assistant ──────────────────────────────────────────────────
-// A real conversational assistant: free-form text, general questions, and
-// image uploads (e.g. "what is this, can I recycle it?" or anything else),
-// with full multi-turn memory sent from the frontend each request.
-//
-// POST /api/ai/chat
-// Body: {
-//   messages: [{ role: 'user'|'assistant', text: string, imageBase64?: string, mimeType?: string }],
-// }
-// The frontend sends the FULL conversation history each time (stateless
-// backend) — this mirrors how Claude/Gemini/ChatGPT-style chat APIs work.
-
 const SYSTEM_INSTRUCTION = `You are the EcoMart AI Assistant — a helpful, friendly general-purpose
 assistant built into the EcoMart sustainable shopping platform in Nepal.
 You can answer any question, have normal conversations, and analyze photos
@@ -43,10 +31,6 @@ router.post('/chat', protect, async (req, res) => {
       });
     }
 
-    // Build Gemini-format conversation history from our simplified message shape.
-    // Gemini's history format is: [{ role: 'user'|'model', parts: [...] }]
-    // The LAST message is sent separately as the new turn; everything before
-    // it becomes prior history so the model has real multi-turn memory.
     const toGeminiParts = (msg) => {
       const parts = [];
       if (msg.text) parts.push({ text: msg.text });
@@ -62,10 +46,15 @@ router.post('/chat', protect, async (req, res) => {
       return parts;
     };
 
-    const history = messages.slice(0, -1).map((m) => ({
+    let history = messages.slice(0, -1).map((m) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: toGeminiParts(m),
     }));
+
+    // ✅ FIX: Drop initial welcome/assistant messages so history ALWAYS starts with 'user'
+    while (history.length > 0 && history[0].role === 'model') {
+      history.shift();
+    }
 
     const lastMessage = messages[messages.length - 1];
     const lastParts = toGeminiParts(lastMessage);
@@ -79,7 +68,7 @@ router.post('/chat', protect, async (req, res) => {
 
     const responseText = await withKeyRotation(async (genAI) => {
       const model = genAI.getGenerativeModel({
-        model: 'gemini-flash-latest',
+        model: 'gemini-1.5-flash',
         systemInstruction: SYSTEM_INSTRUCTION,
       });
       const chat = model.startChat({ history });

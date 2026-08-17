@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FiSend, FiImage, FiX, FiTrash2, FiUser } from 'react-icons/fi';
 import api from '../utils/api';
 
-// ─── Helper: compress uploaded images before sending ─────────────────────────
 const compressImage = (base64Str, maxWidth = 900, maxHeight = 900, quality = 0.75) => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -26,22 +25,25 @@ const compressImage = (base64Str, maxWidth = 900, maxHeight = 900, quality = 0.7
 
 const WELCOME_MESSAGE = {
   role: 'assistant',
-  text: "Hi! I'm the EcoMart AI Assistant \ud83c\udf3f Ask me anything, upload a photo of something you want identified or recycled, or just chat \u2014 I'm here to help.",
+  text: "Hi! I'm the EcoMart AI Assistant 🌿 Ask me anything, upload a photo of something you want identified or recycled, or just chat — I'm here to help.",
 };
 
 const UpcycleStudio = () => {
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
-  const [pendingImage, setPendingImage] = useState(null); // { preview, base64 }
+  const [pendingImage, setPendingImage] = useState(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
   const fileInputRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const textareaRef = useRef(null);
 
+  // ✅ FIX: Scroll only the chat container div, not the main browser window page
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages, sending]);
 
   const handleImageSelect = (e) => {
@@ -53,7 +55,7 @@ const UpcycleStudio = () => {
       setPendingImage({ preview: compressed, base64: compressed });
     };
     reader.readAsDataURL(file);
-    e.target.value = ''; // allow re-selecting the same file later
+    e.target.value = '';
   };
 
   const handleSend = async () => {
@@ -74,14 +76,13 @@ const UpcycleStudio = () => {
     setSending(true);
 
     try {
-      // Send full history (minus imagePreview, which is UI-only) — stateless backend
       const payload = nextMessages.map(({ role, text, imageBase64 }) => ({ role, text, imageBase64 }));
       const { data } = await api.post('/ai/chat', { messages: payload });
       setMessages((prev) => [...prev, { role: 'assistant', text: data.reply }]);
     } catch (err) {
       const msg = err.response?.data?.message || 'Something went wrong. Please try again.';
       setError(msg);
-      setMessages((prev) => [...prev, { role: 'assistant', text: `\u26a0\ufe0f ${msg}`, isError: true }]);
+      setMessages((prev) => [...prev, { role: 'assistant', text: `⚠️ ${msg}`, isError: true }]);
     } finally {
       setSending(false);
     }
@@ -99,7 +100,6 @@ const UpcycleStudio = () => {
     setError(null);
   };
 
-  // Auto-grow textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -141,11 +141,14 @@ const UpcycleStudio = () => {
         )}
       </div>
 
-      {/* Message list */}
-      <div style={{
-        flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px',
-        padding: '4px 4px 16px', minHeight: 0,
-      }}>
+      {/* Message list container */}
+      <div 
+        ref={chatContainerRef}
+        style={{
+          flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px',
+          padding: '4px 4px 16px', minHeight: 0,
+        }}
+      >
         {messages.map((msg, i) => {
           const isUser = msg.role === 'user';
           return (
@@ -194,7 +197,6 @@ const UpcycleStudio = () => {
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       <style>{`
