@@ -6,11 +6,10 @@ const GEMINI_KEYS = rawKeys
   .map((k) => k.trim())
   .filter((k) => k.length > 0);
 
-// Active model strings supported by Google AI SDK
+// Only use current active models that exist on the API
 const MODELS_TO_TRY = [
   'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash-latest'
+  'gemini-2.0-flash'
 ];
 
 let keyIndex = 0;
@@ -35,15 +34,13 @@ async function withKeyRotation(apiCallback) {
         lastError = err;
         const errStr = String(err?.message || err);
 
-        // Fall back to next model on 404
         if (errStr.includes('404') || err?.status === 404) {
-          console.warn(`⚠️ Model "${modelName}" returned 404, trying next fallback...`);
+          console.warn(`⚠️ Model "${modelName}" returned 404, trying next...`);
           continue;
         }
 
-        // Rotate key on rate limit / quota exhaustion
         if (errStr.includes('429') || errStr.includes('quota') || err?.status === 429) {
-          console.warn(`⚠️ Key rate limited, switching API key...`);
+          console.warn(`⚠️ Rate limited, rotating key...`);
           break;
         }
 
