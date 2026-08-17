@@ -7,9 +7,21 @@ const GEMINI_KEYS = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY |
 
 let keyIndex = 0;
 
+// Candidate models ordered by priority
+const CANDIDATE_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.5-flash',
+  'gemini-1.5-flash-latest',
+];
+
 const isQuotaError = (err) => {
   const msg = (err?.message || '').toLowerCase();
   return msg.includes('quota') || msg.includes('rate limit') || msg.includes('429') || msg.includes('resource_exhausted');
+};
+
+const isNotFoundError = (err) => {
+  const msg = (err?.message || '').toLowerCase();
+  return msg.includes('404') || msg.includes('not found') || msg.includes('no longer available');
 };
 
 async function withKeyRotation(runFn) {
@@ -23,19 +35,30 @@ async function withKeyRotation(runFn) {
     const key = GEMINI_KEYS[keyIndex];
     keyIndex = (keyIndex + 1) % GEMINI_KEYS.length;
 
-    try {
-      const genAI = new GoogleGenerativeAI(key);
-      return await runFn(genAI);
-    } catch (err) {
-      lastError = err;
-      if (!isQuotaError(err)) {
+    const genAI = new GoogleGenerativeAI(key);
+
+    for (const modelName of CANDIDATE_MODELS) {
+      try {
+        return await runFn(genAI, modelName);
+      } catch (err) {
+        lastError = err;
+
+        if (isNotFoundError(err)) {
+          console.warn(`⚠️ Model "${modelName}" returned 404/deprecated. Trying next candidate model...`);
+          continue;
+        }
+
+        if (isQuotaError(err)) {
+          console.warn(`⚠️ Gemini key ${attempt + 1}/${GEMINI_KEYS.length} hit quota/rate limit, switching key...`);
+          break;
+        }
+
         throw err;
       }
-      console.warn(`⚠️ Gemini key ${attempt + 1}/${GEMINI_KEYS.length} hit quota/rate limit, trying next key...`);
     }
   }
 
-  throw lastError || new Error('All Gemini API keys exhausted');
+  throw lastError || new Error('All Gemini API keys and models exhausted');
 }
 
 module.exports = { GEMINI_KEYS, withKeyRotation };

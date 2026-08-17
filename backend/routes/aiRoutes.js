@@ -65,9 +65,9 @@ router.post('/chat', protect, async (req, res) => {
       });
     }
 
-    const responseText = await withKeyRotation(async (genAI) => {
+    const responseText = await withKeyRotation(async (genAI, modelName) => {
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
+        model: modelName,
         systemInstruction: SYSTEM_INSTRUCTION,
       });
       const chat = model.startChat({ history });

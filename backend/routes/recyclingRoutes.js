@@ -76,9 +76,9 @@ router.post('/analyze', async (req, res) => {
       },
     };
 
-    const responseText = await withKeyRotation(async (genAI) => {
+    const responseText = await withKeyRotation(async (genAI, modelName) => {
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
+        model: modelName,
         generationConfig: { responseMimeType: 'application/json' },
       });
       const result = await model.generateContent([prompt, imagePart]);
