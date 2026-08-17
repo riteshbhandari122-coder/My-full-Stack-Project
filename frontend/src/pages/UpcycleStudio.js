@@ -39,7 +39,6 @@ const UpcycleStudio = () => {
   const chatContainerRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // ✅ FIX: Scroll only the chat container div, not the main browser window page
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
