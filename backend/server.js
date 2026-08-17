@@ -113,6 +113,7 @@ app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/payment', require('./routes/paymentRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/recycling', require('./routes/recyclingRoutes')); // 🤖 Gemini Vision AI Upcycle Endpoint
+app.use('/api/ai', require('./routes/aiRoutes'));               // 🤖 Gemini General AI Chat Endpoint
 
 // Health Check
 app.get('/api/health', (req, res) => {
