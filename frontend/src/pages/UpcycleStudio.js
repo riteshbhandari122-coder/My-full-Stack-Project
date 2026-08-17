@@ -33,7 +33,7 @@ const UpcycleStudio = () => {
   const [input, setInput] = useState('');
   const [pendingImage, setPendingImage] = useState(null);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
 
   const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -75,7 +75,10 @@ const UpcycleStudio = () => {
     setSending(true);
 
     try {
-      const payload = nextMessages.map(({ role, text, imageBase64 }) => ({ role, text, imageBase64 }));
+      const payload = nextMessages
+        .filter((m) => !m.isError)
+        .map(({ role, text, imageBase64 }) => ({ role, text, imageBase64 }));
+
       const { data } = await api.post('/ai/chat', { messages: payload });
       setMessages((prev) => [...prev, { role: 'assistant', text: data.reply }]);
     } catch (err) {
@@ -108,8 +111,6 @@ const UpcycleStudio = () => {
 
   return (
     <div style={{ maxWidth: '860px', margin: '0 auto', padding: '24px 16px 0', height: 'calc(100vh - 180px)', display: 'flex', flexDirection: 'column', fontFamily: '"DM Sans", sans-serif' }}>
-
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
@@ -140,7 +141,6 @@ const UpcycleStudio = () => {
         )}
       </div>
 
-      {/* Message list container */}
       <div 
         ref={chatContainerRef}
         style={{
@@ -205,7 +205,6 @@ const UpcycleStudio = () => {
         }
       `}</style>
 
-      {/* Input bar */}
       <div style={{ flexShrink: 0, paddingBottom: '20px' }}>
         {pendingImage && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '8px', padding: '6px 8px 6px 6px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px' }}>

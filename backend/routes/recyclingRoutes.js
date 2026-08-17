@@ -9,21 +9,10 @@ const {
   updateRecyclingStatus,
 } = require('../controllers/recyclingController');
 
-// ─── Recycling Submission Routes (Waste Donation for Points) ─────────────────
-// POST /api/recycling        → Submit a recycling drop-off (private)
-// GET  /api/recycling/my     → Get user's recycling history (private)
-// GET  /api/recycling        → Community stats + recent records (public)
-// PUT  /api/recycling/:id    → Update record status (admin)
-
 router.post('/', protect, submitRecycling);
 router.get('/my', protect, getMyRecycling);
-router.get('/', protect, getAllRecycling);
+router.get('/', getAllRecycling);
 router.put('/:id', protect, updateRecyclingStatus);
-
-// ─── AI Upcycle & Recycling Vision Analysis ───────────────────────────────────
-// POST /api/recycling/analyze → Gemini image analysis for upcycle ideas
-// (structured JSON output, purpose-built for the Upcycle Studio's card UI —
-// separate from the general-purpose chat assistant in routes/aiRoutes.js)
 
 router.post('/analyze', async (req, res) => {
   try {
@@ -51,7 +40,7 @@ router.post('/analyze', async (req, res) => {
       Identify:
       1. What the item is (e.g., "Plastic Water Bottle", "Cardboard Box", "Glass Jar", "Aluminum Can").
       2. The material composition (e.g., "PET Plastic (#1)", "Corrugated Paperboard", "Aluminum").
-      3. Whether it is standardly recyclable (e.g. PET Plastic bottles are Recyclable -> set isRecyclable to true).
+      3. Whether it is standardly recyclable (set isRecyclable to true/false).
       4. Provide 2-3 creative, practical DIY upcycling or reuse ideas at home with step-by-step instructions.
       5. Provide a brief disposal or cleaning tip.
 
@@ -89,14 +78,13 @@ router.post('/analyze', async (req, res) => {
 
     const responseText = await withKeyRotation(async (genAI) => {
       const model = genAI.getGenerativeModel({
-        model: 'gemini-flash-latest',
+        model: 'gemini-1.5-flash',
         generationConfig: { responseMimeType: 'application/json' },
       });
       const result = await model.generateContent([prompt, imagePart]);
       return result.response.text();
     });
 
-    // 🛠️ Robust JSON Cleaning & Safe Parsing Fallback
     let cleanedJsonText = responseText.trim();
     if (cleanedJsonText.startsWith('```json')) {
       cleanedJsonText = cleanedJsonText.replace(/^```json/, '').replace(/```$/, '').trim();

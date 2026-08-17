@@ -51,7 +51,6 @@ router.post('/chat', protect, async (req, res) => {
       parts: toGeminiParts(m),
     }));
 
-    // Drop initial welcome/assistant messages so history ALWAYS starts with 'user'
     while (history.length > 0 && history[0].role === 'model') {
       history.shift();
     }
@@ -68,7 +67,7 @@ router.post('/chat', protect, async (req, res) => {
 
     const responseText = await withKeyRotation(async (genAI) => {
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-1.5-flash',
         systemInstruction: SYSTEM_INSTRUCTION,
       });
       const chat = model.startChat({ history });
